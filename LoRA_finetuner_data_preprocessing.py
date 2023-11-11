@@ -17,10 +17,10 @@ convert = True
 # You can choose to give it a `random_color` background instead of white by checking the corresponding option.
 random_color = False
 # Use the `recursive` option to preprocess subfolders as well.
-recursive = False
+recursive = True
 
 
-batch_size = 32
+batch_size = 64
 supported_types = [
     ".png",
     ".jpg",
@@ -120,7 +120,7 @@ os.chdir(finetune_dir)
 # Merge tags and/or captions exist in `train_data_dir` into one metadata JSON file, which will be used as the input for the bucketing section.
 metadata = os.path.join(root_dir, "LoRA/meta_clean.json")
 # Use `recursive` option to process subfolders as well
-recursive = False
+recursive = True
 # Use `clean_caption` option to clean such as duplicate tags, `women` to `girl`, etc
 clean_caption = True
 
@@ -157,13 +157,13 @@ v2 = False  # @param{type:"boolean"}
 model_dir = os.path.join(root_dir, "pretrained_model/AnyLoRA_noVae_fp16-pruned.safetensors")
 input_json = os.path.join(root_dir, "LoRA/meta_clean.json")
 output_json = os.path.join(root_dir, "LoRA/meta_lat.json")
-batch_size = 16
-max_data_loader_n_workers = 4
+batch_size = 32
+max_data_loader_n_workers = 8
 max_resolution = "768,768"  # ["512,512", "640,640", "768,768"]
 mixed_precision = "no"  # ["no", "fp16", "bf16"]
 flip_aug = True
 # Use the `recursive` option to process subfolders as well
-recursive = False
+recursive = True
 
 config = {
     "_train_data_dir": train_data_dir,

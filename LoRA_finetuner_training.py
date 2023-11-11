@@ -66,6 +66,7 @@ network_dim = 32
 network_alpha = 16
 # You can specify this field for resume training.
 network_weight = ""
+#network_weight = os.path.join(output_dir, "last.safetensors")
 network_module = "lycoris.kohya" if network_category in ["LoHa", "LoCon_Lycoris"] else "networks.lora"
 network_args = "" if network_category == "LoRA" else [
     f"conv_dim={conv_dim}", f"conv_alpha={conv_alpha}",
@@ -154,7 +155,7 @@ enable_sample_prompt = True
 sampler = "ddim"  # ["ddim", "pndm", "lms", "euler", "euler_a", "heun", "dpm_2", "dpm_2_a", "dpmsolver","dpmsolver++", "dpmsingle", "k_lms", "k_euler", "k_euler_a", "k_dpm_2", "k_dpm_2_a"]
 noise_offset = 0.1
 num_epochs = 10
-train_batch_size = 8
+train_batch_size = 16
 mixed_precision = "fp16"  # ["no","fp16","bf16"]
 save_precision = "fp16"  # ["float", "fp16", "bf16"]
 save_n_epochs_type = "save_every_n_epochs"  # ["save_every_n_epochs", "save_n_epoch_ratio"]
@@ -163,10 +164,9 @@ save_model_as = "safetensors"  # ["ckpt", "pt", "safetensors"]
 max_token_length = 225
 clip_skip = 2
 gradient_checkpointing = False
-gradient_accumulation_steps = 8
+gradient_accumulation_steps = 4
 seed = 1450  # @param {type:"number"}
 logging_dir = os.path.join(root_dir, "LoRA/logs")
-prior_loss_weight = 1.0
 
 repo_dir = os.path.join(root_dir, "sd-scripts")
 os.chdir(repo_dir)
@@ -203,6 +203,7 @@ config = {
         "training_comment": None,
         "network_dropout": network_dropout,
         "scale_weight_norms": scale_weight_norms if not scale_weight_norms == -1 else None,
+        "no_half_vae": True,
     },
     "optimizer_arguments": {
         "min_snr_gamma": min_snr_gamma if not min_snr_gamma == -1 else None,
@@ -306,8 +307,8 @@ input("Press the Enter key to continue: ")
 # You can import config from another session if you want.
 import subprocess
 
-sample_prompt = os.path.join(root_dir, "LoRA/config/sample_prompt.txt")
-config_file = os.path.join(root_dir, "LoRA/config/config_file.toml")
+sample_prompt = prompt_path
+config_file = config_path
 accelerate_config = os.path.join(repo_dir, "accelerate_config/config.yaml")
 
 accelerate_conf = {
