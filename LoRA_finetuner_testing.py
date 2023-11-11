@@ -1,27 +1,15 @@
-## Visualize loss graph
-import os
-import subprocess
-
-root_dir = "~/sd-train"
-training_logs_path = os.path.join(root_dir, "LoRA/logs")
-
-repo_dir = os.path.join(root_dir, "sd-scripts")
-os.chdir(repo_dir)
-subprocess.run(f"tensorboard --logdir {training_logs_path}", shell=True)
-subprocess.run(f"ngrok http 6006", shell=True)
-
-input("Press the Enter key to continue: ")
-
-
 ## Interrogating LoRA Weights
 # Now you can check if your LoRA trained properly.
+import os
 import torch
 import json
 from safetensors.torch import load_file
 from safetensors.torch import safe_open
 
+root_dir = "~/sd-train"
+
 # If you used `clip_skip = 2` during training, the values of `lora_te_text_model_encoder_layers_11_*` will be `0.0`, this is normal. These layers are not trained at this value of `Clip Skip`.
-network_weight = ""
+network_weight = os.path.join(root_dir, "LoRA/output/last.safetensors")
 verbose = False
 
 def is_safetensors(path):
@@ -69,3 +57,15 @@ def main(file_path, verbose: bool):
 
 if __name__ == "__main__":
     main(network_weight, verbose)
+
+input("Press the Enter key to continue: ")
+
+
+## Visualize loss graph
+import subprocess
+
+training_logs_path = os.path.join(root_dir, "LoRA/logs")
+
+repo_dir = os.path.join(root_dir, "sd-scripts")
+os.chdir(repo_dir)
+subprocess.Popen(f"tensorboard --logdir {training_logs_path}", shell=True)
