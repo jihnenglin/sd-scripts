@@ -37,6 +37,7 @@ resolution = "768,768" # ["512,512", "768,768"]
 # keep heading N tokens when shuffling caption tokens (token means comma separated strings)
 keep_tokens = 0
 color_aug = True
+flip_aug = True
 
 input("Press the Enter key to continue: ")
 
@@ -226,6 +227,7 @@ config = {
         "caption_tag_dropout_rate": 0,
         "caption_dropout_every_n_epochs": 0,
         "color_aug": color_aug,
+        "flip_aug": flip_aug,
         "face_crop_aug_range": None,
         "token_warmup_min": 1,
         "token_warmup_step": 0,
