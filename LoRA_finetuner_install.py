@@ -1,3 +1,4 @@
+## Install Dependencies
 import os
 
 # root_dir
@@ -51,6 +52,9 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["SAFETENSORS_FAST_GPU"] = "1"
 
 
+## Locating Train Data Directory
+# Define location of your training data. This cell will also create a folder based on your input.
+# This folder will serve as the target folder for scraping, tagging, bucketing, and training in the next cell.
 train_data_dir = os.path.join(root_dir, "LoRA/train_data")
 
 os.makedirs(train_data_dir, exist_ok=True)

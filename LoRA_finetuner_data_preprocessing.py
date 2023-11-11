@@ -1,3 +1,4 @@
+## Data Cleaning
 import os
 import random
 import concurrent.futures
@@ -109,6 +110,7 @@ if convert:
 input("Press the Enter key to continue: ")
 
 
+## Create Metadata File
 import subprocess
 
 repo_dir = os.path.join(root_dir, "sd-scripts")
@@ -149,7 +151,7 @@ subprocess.run(f"{final_args}", shell=True)
 
 input("Press the Enter key to continue: ")
 
-
+## Bucketing and Latents Caching
 # This code will create buckets based on the `max_resolution` provided for multi-aspect ratio training, and then convert all images within the `train_data_dir` to latents.
 v2 = False  # @param{type:"boolean"}
 model_dir = os.path.join(root_dir, "pretrained_model/AnyLoRA_noVae_fp16-pruned.safetensors")
@@ -157,8 +159,8 @@ input_json = os.path.join(root_dir, "LoRA/meta_clean.json")
 output_json = os.path.join(root_dir, "LoRA/meta_lat.json")
 batch_size = 16
 max_data_loader_n_workers = 4
-max_resolution = "768,768"  # ["512,512", "640,640", "768,768"] {allow-input: false}
-mixed_precision = "no"  # ["no", "fp16", "bf16"] {allow-input: false}
+max_resolution = "768,768"  # ["512,512", "640,640", "768,768"]
+mixed_precision = "no"  # ["no", "fp16", "bf16"]
 flip_aug = True
 # Use the `recursive` option to process subfolders as well
 recursive = False
