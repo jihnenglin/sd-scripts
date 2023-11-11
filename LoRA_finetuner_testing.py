@@ -78,7 +78,8 @@ def open_file_explorer(root_dir=root_dir, port=8765):
 
 
 # Example usage
-open_file_explorer(root_dir=root_dir, port=8765)
+sample_dir = os.path.join(root_dir, "LoRA/output/sample")
+open_file_explorer(root_dir=sample_dir, port=8765)
 
 input("Press the Enter key to continue: ")
 
