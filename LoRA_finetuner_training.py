@@ -117,6 +117,9 @@ else:
         print(f"  - {network_weight} does not exist.")
         network_weight = ""
 
+print(f"  - network_dropout: {network_dropout}")
+print(f"  - scale_weight_norms: {scale_weight_norms}") if not scale_weight_norms == -1 else ""
+
 print("- Optimizer Config:")
 print(f"  - Additional network category: {network_category}")
 print(f"  - Using {optimizer_type} as Optimizer")
