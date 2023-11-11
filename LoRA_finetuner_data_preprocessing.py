@@ -144,8 +144,7 @@ for k, v in config.items():
         args += f"--{k}={v} "
 
 os.chdir(finetune_dir)
-final_args = f"python merge_all_to_metadata.py {args}"
-subprocess.run([f"{final_args}"], cwd=f"{finetune_dir}")
+subprocess.run(["python", "merge_all_to_metadata.py", f"{args}"], cwd=f"{finetune_dir}")
 
 input("Press the Enter key to continue: ")
 
@@ -195,5 +194,4 @@ for k, v in config.items():
         args += f"--{k}={v} "
 
 os.chdir(finetune_dir)
-final_args = f"python prepare_buckets_latents.py {args}"
-subprocess.run([f"{final_args}"], cwd=f"{finetune_dir}")
+subprocess.run(["python", "prepare_buckets_latents.py", f"{args}"], cwd=f"{finetune_dir}")
