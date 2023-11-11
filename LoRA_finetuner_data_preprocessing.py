@@ -120,7 +120,7 @@ metadata = os.path.join(root_dir, "LoRA/meta_clean.json")
 # Use `recursive` option to process subfolders as well
 recursive = False
 # Use `clean_caption` option to clean such as duplicate tags, `women` to `girl`, etc
-clean_caption = False
+clean_caption = True
 
 config = {
     "_train_data_dir": train_data_dir,
