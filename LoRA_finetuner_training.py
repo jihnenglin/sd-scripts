@@ -36,6 +36,7 @@ in_json = os.path.join(root_dir, "LoRA/meta_lat.json")
 resolution = "768,768" # ["512,512", "768,768"]
 # keep heading N tokens when shuffling caption tokens (token means comma separated strings)
 keep_tokens = 0
+color_aug = True
 
 input("Press the Enter key to continue: ")
 
@@ -68,9 +69,12 @@ network_module = "lycoris.kohya" if network_category in ["LoHa", "LoCon_Lycoris"
 network_args = "" if network_category == "LoRA" else [
     f"conv_dim={conv_dim}", f"conv_alpha={conv_alpha}",
     ]
+# See here (https://github.com/kohya-ss/sd-scripts/pull/545?ref=blog.hinablue.me)
+network_dropout = 0
+scale_weight_norms = -1  # -1 to disable
 ### Optimizer Config:
 # `NEW` Gamma for reducing the weight of high-loss timesteps. Lower numbers have a stronger effect. The paper recommends 5. Read the paper [here](https://arxiv.org/abs/2303.09556).
-min_snr_gamma = 5
+min_snr_gamma = 5  # -1 to disable
 # `AdamW8bit` was the old `--use_8bit_adam`.
 optimizer_type = "AdamW8bit"  # ["AdamW", "AdamW8bit", "Lion", "SGDNesterov", "SGDNesterov8bit", "DAdaptation", "AdaFactor"]
 # Additional arguments for optimizer, e.g: `["decouple=True","weight_decay=0.6"]`
@@ -193,6 +197,8 @@ config = {
         "network_train_unet_only": True if train_unet and not train_text_encoder else False,
         "network_train_text_encoder_only": True if train_text_encoder and not train_unet else False,
         "training_comment": None,
+        "network_dropout": network_dropout,
+        "scale_weight_norms": scale_weight_norms if not scale_weight_norms == -1 else None,
     },
     "optimizer_arguments": {
         "min_snr_gamma": min_snr_gamma if not min_snr_gamma == -1 else None,
@@ -216,7 +222,7 @@ config = {
         "caption_dropout_rate": 0,
         "caption_tag_dropout_rate": 0,
         "caption_dropout_every_n_epochs": 0,
-        "color_aug": False,
+        "color_aug": color_aug,
         "face_crop_aug_range": None,
         "token_warmup_min": 1,
         "token_warmup_step": 0,
