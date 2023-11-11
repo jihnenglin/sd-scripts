@@ -61,6 +61,28 @@ if __name__ == "__main__":
 input("Press the Enter key to continue: ")
 
 
+# Check sample pics
+import threading
+from imjoy_elfinder.app import main
+
+def start_file_explorer(root_dir=root_dir, port=8765):
+    try:
+        main(["--root-dir=" + root_dir, "--port=" + str(port)])
+    except Exception as e:
+        print("Error starting file explorer:", str(e))
+
+
+def open_file_explorer(root_dir=root_dir, port=8765):
+    thread = threading.Thread(target=start_file_explorer, args=[root_dir, port])
+    thread.start()
+
+
+# Example usage
+open_file_explorer(root_dir=root_dir, port=8765)
+
+input("Press the Enter key to continue: ")
+
+
 ## Visualize loss graph
 import subprocess
 
@@ -69,3 +91,5 @@ training_logs_path = os.path.join(root_dir, "LoRA/logs")
 repo_dir = os.path.join(root_dir, "sd-scripts")
 os.chdir(repo_dir)
 subprocess.Popen(f"tensorboard --logdir {training_logs_path}", shell=True)
+
+input("Press the Enter key to continue: ")
