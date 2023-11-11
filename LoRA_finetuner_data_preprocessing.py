@@ -178,7 +178,6 @@ config = {
     "max_data_loader_n_workers": max_data_loader_n_workers,
     "max_resolution": max_resolution,
     "mixed_precision": mixed_precision,
-    "skip_existing": True
 }
 
 args = ""
