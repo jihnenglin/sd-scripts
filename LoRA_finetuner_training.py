@@ -34,7 +34,7 @@ input("Press the Enter key to continue: ")
 import toml
 import glob
 
-dataset_repeats = 10
+dataset_repeats = 1
 caption_extension = ".txt"  # ["none", ".txt", ".caption"]
 resolution = 768  # [512, 640, 768, 896, 1024]
 flip_aug = True
@@ -45,7 +45,7 @@ color_aug = True
 def parse_folder_name(folder_name, default_num_repeats):
     folder_name_parts = folder_name.split("_")
 
-    if len(folder_name_parts) == 2:
+    if len(folder_name_parts) >= 2:
         if folder_name_parts[0].isdigit():
             num_repeats = int(folder_name_parts[0])
         else:
@@ -246,7 +246,7 @@ enable_sample_prompt = True
 sampler = "ddim"  # ["ddim", "pndm", "lms", "euler", "euler_a", "heun", "dpm_2", "dpm_2_a", "dpmsolver","dpmsolver++", "dpmsingle", "k_lms", "k_euler", "k_euler_a", "k_dpm_2", "k_dpm_2_a"]
 noise_offset = 0.1
 num_epochs = 10
-vae_batch_size = 32
+vae_batch_size = 16
 train_batch_size = 16
 mixed_precision = "fp16"  # ["no","fp16","bf16"]
 save_precision = "fp16"  # ["float", "fp16", "bf16"]
@@ -307,7 +307,7 @@ config = {
         "lr_scheduler_power": lr_scheduler_power if lr_scheduler == "polynomial" else None,
     },
     "dataset_arguments": {
-        "cache_latents": True,
+        "cache_latents": False,
         "debug_dataset": False,
         "vae_batch_size": vae_batch_size,
     },
