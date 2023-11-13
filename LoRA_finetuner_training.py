@@ -34,8 +34,9 @@ input("Press the Enter key to continue: ")
 import toml
 import glob
 
+# This configuration is designed for `one concept` training. Refer to this [guide](https://rentry.org/kohyaminiguide#b-multi-concept-training) for multi-concept training.
 dataset_repeats = 1
-caption_extension = ".txt"  # ["none", ".txt", ".caption"]
+in_json = os.path.join(root_dir, "LoRA/meta_lat.json")
 resolution = 768  # [512, 640, 768, 896, 1024]
 flip_aug = True
 # keep heading N tokens when shuffling caption tokens (token means comma separated strings)
@@ -94,7 +95,6 @@ subsets = train_subsets
 config = {
     "general": {
         "enable_bucket": True,
-        "caption_extension": caption_extension,
         "shuffle_caption": True,
         "keep_tokens": keep_tokens,
         "bucket_reso_steps": 64,
@@ -246,7 +246,6 @@ enable_sample_prompt = True
 sampler = "ddim"  # ["ddim", "pndm", "lms", "euler", "euler_a", "heun", "dpm_2", "dpm_2_a", "dpmsolver","dpmsolver++", "dpmsingle", "k_lms", "k_euler", "k_euler_a", "k_dpm_2", "k_dpm_2_a"]
 noise_offset = 0.1
 num_epochs = 10
-vae_batch_size = 16
 train_batch_size = 16
 mixed_precision = "fp16"  # ["no","fp16","bf16"]
 save_precision = "fp16"  # ["float", "fp16", "bf16"]
@@ -307,9 +306,8 @@ config = {
         "lr_scheduler_power": lr_scheduler_power if lr_scheduler == "polynomial" else None,
     },
     "dataset_arguments": {
-        "cache_latents": False,
         "debug_dataset": False,
-        "vae_batch_size": vae_batch_size,
+        "in_json": in_json,
     },
     "training_arguments": {
         "output_dir": output_dir,
