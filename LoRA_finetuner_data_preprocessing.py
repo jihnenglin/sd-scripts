@@ -10,7 +10,6 @@ train_data_dir = os.path.join(root_dir, "LoRA/train_data")
 
 os.chdir(root_dir)
 
-test = os.listdir(train_data_dir)
 # This section will delete unnecessary files and unsupported media such as `.mp4`, `.webm`, and `.gif`.
 # Set the `convert` parameter to convert your transparent dataset with an alpha channel (RGBA) to RGB and give it a white background.
 convert = True
