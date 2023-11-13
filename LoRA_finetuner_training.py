@@ -31,13 +31,108 @@ input("Press the Enter key to continue: ")
 
 
 ## Dataset Config
-dataset_repeats = 1
-in_json = os.path.join(root_dir, "LoRA/meta_lat.json")
-resolution = "768,768" # ["512,512", "768,768"]
+import toml
+import glob
+
+dataset_repeats = 10
+caption_extension = ".txt"  # ["none", ".txt", ".caption"]
+resolution = 768  # [512, 640, 768, 896, 1024]
+flip_aug = True
 # keep heading N tokens when shuffling caption tokens (token means comma separated strings)
 keep_tokens = 0
 color_aug = True
-flip_aug = True
+
+def parse_folder_name(folder_name, default_num_repeats):
+    folder_name_parts = folder_name.split("_")
+
+    if len(folder_name_parts) == 2:
+        if folder_name_parts[0].isdigit():
+            num_repeats = int(folder_name_parts[0])
+        else:
+            num_repeats = default_num_repeats
+    else:
+        num_repeats = default_num_repeats
+
+    return num_repeats
+
+def find_image_files(path):
+    supported_extensions = (".png", ".jpg", ".jpeg", ".webp", ".bmp")
+    return [file for file in glob.glob(path + '/**/*', recursive=True) if file.lower().endswith(supported_extensions)]
+
+def process_data_dir(data_dir, default_num_repeats):
+    subsets = []
+
+    images = find_image_files(data_dir)
+    if images:
+        subsets.append({
+            "image_dir": data_dir,
+            "num_repeats": default_num_repeats,
+        })
+
+    for root, dirs, files in os.walk(data_dir):
+        for folder in dirs:
+            folder_path = os.path.join(root, folder)
+            images = find_image_files(folder_path)
+
+            if images:
+                num_repeats= parse_folder_name(folder, default_num_repeats)
+
+                subset = {
+                    "image_dir": folder_path,
+                    "num_repeats": num_repeats,
+                }
+
+                subsets.append(subset)
+
+    return subsets
+
+train_data_dir = os.path.join(root_dir, "LoRA/train_data")
+train_subsets = process_data_dir(train_data_dir, dataset_repeats)
+
+subsets = train_subsets
+
+config = {
+    "general": {
+        "enable_bucket": True,
+        "caption_extension": caption_extension,
+        "shuffle_caption": True,
+        "keep_tokens": keep_tokens,
+        "bucket_reso_steps": 64,
+        "bucket_no_upscale": False,
+    },
+    "datasets": [
+        {
+            "resolution": resolution,
+            "min_bucket_reso": 320 if resolution > 640 else 256,
+            "max_bucket_reso": 1280 if resolution > 640 else 1024,
+            "caption_dropout_rate": 0,
+            "caption_tag_dropout_rate": 0,
+            "caption_dropout_every_n_epochs": 0,
+            "flip_aug": flip_aug,
+            "color_aug": color_aug,
+            "face_crop_aug_range": None,
+            "subsets": subsets,
+        }
+    ],
+}
+
+config_dir = os.path.join(root_dir, "LoRA/config")
+dataset_config = os.path.join(config_dir, "dataset_config.toml")
+
+for key in config:
+    if isinstance(config[key], dict):
+        for sub_key in config[key]:
+            if config[key][sub_key] == "":
+                config[key][sub_key] = None
+    elif config[key] == "":
+        config[key] = None
+
+config_str = toml.dumps(config)
+
+with open(dataset_config, "w") as f:
+    f.write(config_str)
+
+print(config_str)
 
 input("Press the Enter key to continue: ")
 
@@ -54,8 +149,6 @@ network_category = "LoRA"  # ["LoRA", "LoCon", "LoCon_Lycoris", "LoHa"]
 # | LoRA | 32 | 1 | - | - |
 # | LoCon | 16 | 8 | 8 | 1 |
 # | LoHa | 8 | 4 | 4 | 1 |
-
-# - Note that `dropout` and `cp_decomposition` are not available in this notebook.
 
 # `conv_dim` and `conv_alpha` are needed to train `LoCon` and `LoHa`; skip them if you are training normal `LoRA`. However, when in doubt, set `dim = alpha`.
 conv_dim = 32
@@ -148,13 +241,12 @@ input("Press the Enter key to continue: ")
 
 
 ## Training Config
-import toml
-
 lowram = False
 enable_sample_prompt = True
 sampler = "ddim"  # ["ddim", "pndm", "lms", "euler", "euler_a", "heun", "dpm_2", "dpm_2_a", "dpmsolver","dpmsolver++", "dpmsingle", "k_lms", "k_euler", "k_euler_a", "k_dpm_2", "k_dpm_2_a"]
 noise_offset = 0.1
 num_epochs = 10
+vae_batch_size = 32
 train_batch_size = 16
 mixed_precision = "fp16"  # ["no","fp16","bf16"]
 save_precision = "fp16"  # ["float", "fp16", "bf16"]
@@ -165,13 +257,11 @@ max_token_length = 225
 clip_skip = 2
 gradient_checkpointing = False
 gradient_accumulation_steps = 4
-seed = 1450  # @param {type:"number"}
+seed = 1450
 logging_dir = os.path.join(root_dir, "LoRA/logs")
 
 repo_dir = os.path.join(root_dir, "sd-scripts")
 os.chdir(repo_dir)
-
-train_data_dir = os.path.join(root_dir, "LoRA/train_data")
 
 sample_str = f"""
   masterpiece, best quality, 1boy, male focus, aqua eyes, baseball cap, blonde hair, closed mouth, earrings, green background, hat, stud earrings, jewelry, looking at viewer, shirt, short hair, simple background, solo, upper body, yellow shirt \
@@ -217,21 +307,9 @@ config = {
         "lr_scheduler_power": lr_scheduler_power if lr_scheduler == "polynomial" else None,
     },
     "dataset_arguments": {
+        "cache_latents": True,
         "debug_dataset": False,
-        "in_json": in_json,
-        "train_data_dir": train_data_dir,
-        "dataset_repeats": dataset_repeats,
-        "shuffle_caption": True,
-        "keep_tokens": keep_tokens,
-        "resolution": resolution,
-        "caption_dropout_rate": 0,
-        "caption_tag_dropout_rate": 0,
-        "caption_dropout_every_n_epochs": 0,
-        "color_aug": color_aug,
-        "flip_aug": flip_aug,
-        "face_crop_aug_range": None,
-        "token_warmup_min": 1,
-        "token_warmup_step": 0,
+        "vae_batch_size": vae_batch_size,
     },
     "training_arguments": {
         "output_dir": output_dir,
@@ -248,7 +326,7 @@ config = {
         "mem_eff_attn": False,
         "xformers": True,
         "max_train_epochs": num_epochs,
-        "max_data_loader_n_workers": 8,
+        "max_data_loader_n_workers": 32,
         "persistent_data_loader_workers": True,
         "seed": seed if seed > 0 else None,
         "gradient_checkpointing": gradient_checkpointing,
@@ -270,7 +348,6 @@ config = {
     },
 }
 
-config_dir = os.path.join(root_dir, "LoRA/config")
 config_path = os.path.join(config_dir, "config_file.toml")
 prompt_path = os.path.join(config_dir, "sample_prompt.txt")
 
@@ -299,10 +376,11 @@ input("Press the Enter key to continue: ")
 ## Start Training
 
 # Check your config here if you want to edit something:
-# - `sample_prompt` : /content/LoRA/config/sample_prompt.txt
-# - `config_file` : /content/LoRA/config/config_file.toml
+# - `sample_prompt` : ~/sd-train/LoRA/config/sample_prompt.txt
+# - `config_file` : ~/sd-train/LoRA/config/config_file.toml
+# - `dataset_config` : ~/sd-train/LoRA/config/dataset_config.toml
 
-# Generated sample can be seen here: /content/LoRA/output/sample
+# Generated sample can be seen here: ~/sd-train/LoRA/output/sample
 
 # You can import config from another session if you want.
 import subprocess
@@ -318,6 +396,7 @@ accelerate_conf = {
 
 train_conf = {
     "sample_prompts" : sample_prompt,
+    "dataset_config" : dataset_config,
     "config_file" : config_file
 }
 

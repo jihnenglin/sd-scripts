@@ -106,7 +106,7 @@ if convert:
             executor.map(process_image, batch)
 
     print("All images have been converted")
-
+"""
 input("Press the Enter key to continue: ")
 
 
@@ -198,3 +198,4 @@ for k, v in config.items():
 os.chdir(finetune_dir)
 final_args = f"python prepare_buckets_latents.py {args}"
 subprocess.run(f"{final_args}", shell=True)
+"""

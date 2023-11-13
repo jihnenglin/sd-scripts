@@ -15,16 +15,6 @@ accelerate_config = os.path.join(repo_dir, "accelerate_config/config.yaml")
 tools_dir = os.path.join(repo_dir, "tools")
 finetune_dir = os.path.join(repo_dir, "finetune")
 
-def read_file(filename):
-    with open(filename, "r") as f:
-        contents = f.read()
-    return contents
-
-
-def write_file(filename, contents):
-    with open(filename, "w") as f:
-        f.write(contents)
-
 
 def install_dependencies():
     from accelerate.utils import write_basic_config
