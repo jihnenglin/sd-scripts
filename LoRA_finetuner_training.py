@@ -385,8 +385,10 @@ input("Press the Enter key to continue: ")
 # You can import config from another session if you want.
 import subprocess
 
-sample_prompt = prompt_path
-config_file = config_path
+sample_prompt = os.path.join(root_dir, "LoRA/config/sample_prompt.txt")
+config_file = os.path.join(root_dir, "LoRA/config/config_file.toml")
+dataset_config = os.path.join(root_dir, "LoRA/config/dataset_config.toml")
+
 accelerate_config = os.path.join(repo_dir, "accelerate_config/config.yaml")
 
 accelerate_conf = {
