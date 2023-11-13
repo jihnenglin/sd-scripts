@@ -3,7 +3,6 @@ import os
 
 # root_dir
 root_dir = "~/sd-train"
-deps_dir = os.path.join(root_dir, "deps")
 repo_dir = os.path.join(root_dir, "sd-scripts")
 training_dir = os.path.join(root_dir, "LoRA")
 pretrained_model = os.path.join(root_dir, "pretrained_model")
@@ -12,7 +11,6 @@ config_dir = os.path.join(training_dir, "config")
 
 # repo_dir
 accelerate_config = os.path.join(repo_dir, "accelerate_config/config.yaml")
-tools_dir = os.path.join(repo_dir, "tools")
 finetune_dir = os.path.join(repo_dir, "finetune")
 
 
@@ -26,7 +24,6 @@ def install_dependencies():
 os.chdir(root_dir)
 
 for dir in [
-    deps_dir,
     training_dir,
     config_dir,
     pretrained_model,
