@@ -246,7 +246,7 @@ enable_sample_prompt = True
 sampler = "ddim"  # ["ddim", "pndm", "lms", "euler", "euler_a", "heun", "dpm_2", "dpm_2_a", "dpmsolver","dpmsolver++", "dpmsingle", "k_lms", "k_euler", "k_euler_a", "k_dpm_2", "k_dpm_2_a"]
 noise_offset = 0.1
 num_epochs = 10
-train_batch_size = 16
+train_batch_size = 8
 mixed_precision = "fp16"  # ["no","fp16","bf16"]
 save_precision = "fp16"  # ["float", "fp16", "bf16"]
 save_n_epochs_type = "save_every_n_epochs"  # ["save_every_n_epochs", "save_n_epoch_ratio"]
@@ -255,7 +255,7 @@ save_model_as = "safetensors"  # ["ckpt", "pt", "safetensors"]
 max_token_length = 225
 clip_skip = 2
 gradient_checkpointing = False
-gradient_accumulation_steps = 4
+gradient_accumulation_steps = 2
 seed = 1450
 logging_dir = os.path.join(root_dir, "LoRA/logs")
 
