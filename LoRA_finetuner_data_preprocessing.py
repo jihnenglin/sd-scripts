@@ -139,6 +139,7 @@ def make_args(config):
             args += f"--{k}={v} "
         elif isinstance(v, int) and not isinstance(v, bool):
             args += f"--{k}={v} "
+    return args
 
 def get_supported_images(folder):
     supported_extensions = (".png", ".jpg", ".jpeg", ".webp", ".bmp")
