@@ -247,7 +247,7 @@ config = {
         "vae": vae,
         "max_train_steps": max_train_n_type_value if max_train_n_type == "max_train_steps" else None,
         "max_train_epochs": max_train_n_type_value if max_train_n_type == "max_train_epochs" else None,
-        "max_data_loader_n_workers": 128,
+        "max_data_loader_n_workers": 64,
         "persistent_data_loader_workers": True,
         "seed": seed if seed > 0 else None,
         "gradient_checkpointing": gradient_checkpointing,

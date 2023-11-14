@@ -210,13 +210,13 @@ model_dir = os.path.join(root_dir, "pretrained_model/AnyLoRA_noVae_fp16-pruned.s
 input_json = os.path.join(json_dir, "meta_clean.json")
 output_json = os.path.join(json_dir, "meta_lat.json")
 batch_size = 32
-max_data_loader_n_workers = 128
+max_data_loader_n_workers = 64
 max_resolution = "768,768"  # ["512,512", "640,640", "768,768"]
 mixed_precision = "no"  # ["no", "fp16", "bf16"]
 flip_aug = True
 # Use the `recursive` option to process subfolders as well
 recursive = True
-skip_existing = False
+skip_existing = True
 
 if not recursive:
     config = {
