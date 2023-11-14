@@ -61,7 +61,7 @@ if __name__ == "__main__":
 input("Press the Enter key to continue: ")
 
 
-# Check sample pics
+## Check sample pics
 import threading
 from imjoy_elfinder.app import main
 
