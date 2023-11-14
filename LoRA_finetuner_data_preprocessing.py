@@ -118,8 +118,8 @@ finetune_dir = os.path.join(repo_dir, "finetune")
 os.chdir(finetune_dir)
 
 # Merge tags and/or captions exist in `train_data_dir` into one metadata JSON file, which will be used as the input for the bucketing section.
-# If `recursive`, make JSON files for every top-level folder in `train_data_dir`.
-# If `recursive`, the JSON file names would be `{default_json_file_name[:-5]}_{folder_name}.json`
+# If `recursive`, additionally make JSON files for every top-level folder (`dataset.subset`) in `train_data_dir`.
+# If `recursive`, the additional JSON file names would be `{default_json_file_name[:-5]}_{folder_name}.json`
 metadata = os.path.join(root_dir, "LoRA/meta_clean.json")
 # Use `recursive` option to process subfolders as well
 recursive = True
@@ -171,7 +171,7 @@ else:
         folder_name = os.path.basename(train_data_dir)
         config = {
             "_train_data_dir": train_data_dir,
-            "_out_json": f"{metadata[:-5]}_{folder_name}.json",
+            "_out_json": metadata,
             "recursive": False,
             "full_path": recursive,
             "clean_caption": clean_caption
@@ -204,8 +204,8 @@ input("Press the Enter key to continue: ")
 # This code will create buckets based on the `max_resolution` provided for multi-aspect ratio training, and then convert all images within the `train_data_dir` to latents.
 v2 = False  # @param{type:"boolean"}
 model_dir = os.path.join(root_dir, "pretrained_model/AnyLoRA_noVae_fp16-pruned.safetensors")
-# If `recursive`, make JSON files for every top-level folder in `train_data_dir`.
-# If `recursive`, the JSON file names would be `{default_json_file_name[:-5]}_{folder_name}.json`
+# If `recursive`, additionally make JSON files for every top-level folder (`dataset.subset`) in `train_data_dir`.
+# If `recursive`, the additional JSON file names would be `{default_json_file_name[:-5]}_{folder_name}.json`
 input_json = os.path.join(root_dir, "LoRA/meta_clean.json")
 output_json = os.path.join(root_dir, "LoRA/meta_lat.json")
 batch_size = 32
@@ -247,8 +247,8 @@ else:
         folder_name = os.path.basename(train_data_dir)
         config = {
             "_train_data_dir": train_data_dir,
-            "_in_json": f"{input_json[:-5]}_{folder_name}.json",
-            "_out_json": f"{output_json[:-5]}_{folder_name}.json",
+            "_in_json": input_json,
+            "_out_json": output_json,
             "_model_name_or_path": model_dir,
             "recursive": False,
             "full_path": recursive,

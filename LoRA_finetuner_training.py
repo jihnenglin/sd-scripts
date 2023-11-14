@@ -36,6 +36,8 @@ import glob
 
 # This configuration is designed for `one concept` training. Refer to this [guide](https://rentry.org/kohyaminiguide#b-multi-concept-training) for multi-concept training.
 dataset_repeats = 1
+# If `recursive`, additionally make JSON files for every top-level folder (`dataset.subset`) in `train_data_dir`.
+# If `recursive`, the additional JSON file names would be `{default_json_file_name[:-5]}_{folder_name}.json`
 in_json = os.path.join(root_dir, "LoRA/meta_lat.json")
 resolution = 768  # [512, 640, 768, 896, 1024]
 flip_aug = True
@@ -43,54 +45,29 @@ flip_aug = True
 keep_tokens = 0
 color_aug = True
 
-def parse_folder_name(folder_name, default_num_repeats):
-    folder_name_parts = folder_name.split("_")
-
-    if len(folder_name_parts) >= 2:
-        if folder_name_parts[0].isdigit():
-            num_repeats = int(folder_name_parts[0])
-        else:
-            num_repeats = default_num_repeats
-    else:
-        num_repeats = default_num_repeats
-
-    return num_repeats
-
-def find_image_files(path):
+def get_supported_images(folder):
     supported_extensions = (".png", ".jpg", ".jpeg", ".webp", ".bmp")
-    return [file for file in glob.glob(path + '/**/*', recursive=True) if file.lower().endswith(supported_extensions)]
+    return [file for ext in supported_extensions for file in glob.glob(f"{folder}/*{ext}")]
 
-def process_data_dir(data_dir, default_num_repeats):
-    subsets = []
+def get_subfolders_with_supported_images(folder):
+    subfolders = [os.path.join(folder, subfolder) for subfolder in os.listdir(folder) if os.path.isdir(os.path.join(folder, subfolder))]
+    return [subfolder for subfolder in subfolders if len(get_supported_images(subfolder)) > 0]
 
-    images = find_image_files(data_dir)
-    if images:
-        subsets.append({
-            "image_dir": data_dir,
-            "num_repeats": default_num_repeats,
-        })
+def get_folder_name_and_num_repeats(folder):
+    folder_name = os.path.basename(folder)
+    try:
+        repeats, _ = folder_name.split('_', 1)
+        num_repeats = int(repeats)
+    except ValueError:
+        num_repeats = 1
 
-    for root, dirs, files in os.walk(data_dir):
-        for folder in dirs:
-            folder_path = os.path.join(root, folder)
-            images = find_image_files(folder_path)
-
-            if images:
-                num_repeats= parse_folder_name(folder, default_num_repeats)
-
-                subset = {
-                    "image_dir": folder_path,
-                    "num_repeats": num_repeats,
-                }
-
-                subsets.append(subset)
-
-    return subsets
+    return folder_name, num_repeats
 
 train_data_dir = os.path.join(root_dir, "LoRA/train_data")
-train_subsets = process_data_dir(train_data_dir, dataset_repeats)
+train_supported_images = get_supported_images(train_data_dir)
+train_subfolders = get_subfolders_with_supported_images(train_data_dir)
 
-subsets = train_subsets
+subsets = []
 
 config = {
     "general": {
@@ -115,6 +92,21 @@ config = {
         }
     ],
 }
+
+if train_supported_images:
+    subsets.append({
+        "image_dir": train_data_dir,
+        "metadata_file": in_json,
+        "num_repeats": dataset_repeats,
+    })
+
+for subfolder in train_subfolders:
+    folder_name, num_repeats = get_folder_name_and_num_repeats(subfolder)
+    subsets.append({
+        "image_dir": subfolder,
+        "metadata_file": f"{in_json[:-5]}_{folder_name}.json",
+        "num_repeats": num_repeats,
+    })
 
 config_dir = os.path.join(root_dir, "LoRA/config")
 dataset_config = os.path.join(config_dir, "dataset_config.toml")
