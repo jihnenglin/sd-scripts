@@ -111,42 +111,90 @@ input("Press the Enter key to continue: ")
 
 ## Create Metadata File
 import subprocess
+import glob
 
 repo_dir = os.path.join(root_dir, "sd-scripts")
 finetune_dir = os.path.join(repo_dir, "finetune")
 os.chdir(finetune_dir)
 
 # Merge tags and/or captions exist in `train_data_dir` into one metadata JSON file, which will be used as the input for the bucketing section.
+# If `recursive`, make JSON files for every top-level folder in `train_data_dir`.
+# If `recursive`, the JSON file names would be `{default_json_file_name[:-5]}_{folder_name}.json`
 metadata = os.path.join(root_dir, "LoRA/meta_clean.json")
 # Use `recursive` option to process subfolders as well
 recursive = True
 # Use `clean_caption` option to clean such as duplicate tags, `women` to `girl`, etc
 clean_caption = True
 
-config = {
-    "_train_data_dir": train_data_dir,
-    "_out_json": metadata,
-    "recursive": recursive,
-    "full_path": recursive,
-    "clean_caption": clean_caption
-}
+def make_args(config):
+    args = ""
+    for k, v in config.items():
+        if k.startswith("_"):
+            args += f'"{v}" '
+        elif isinstance(v, str):
+            args += f'--{k}="{v}" '
+        elif isinstance(v, bool) and v:
+            args += f"--{k} "
+        elif isinstance(v, float) and not isinstance(v, bool):
+            args += f"--{k}={v} "
+        elif isinstance(v, int) and not isinstance(v, bool):
+            args += f"--{k}={v} "
 
-args = ""
-for k, v in config.items():
-    if k.startswith("_"):
-        args += f'"{v}" '
-    elif isinstance(v, str):
-        args += f'--{k}="{v}" '
-    elif isinstance(v, bool) and v:
-        args += f"--{k} "
-    elif isinstance(v, float) and not isinstance(v, bool):
-        args += f"--{k}={v} "
-    elif isinstance(v, int) and not isinstance(v, bool):
-        args += f"--{k}={v} "
+def get_supported_images(folder):
+    supported_extensions = (".png", ".jpg", ".jpeg", ".webp", ".bmp")
+    return [file for ext in supported_extensions for file in glob.glob(f"{folder}/*{ext}")]
 
-os.chdir(finetune_dir)
-final_args = f"python merge_all_to_metadata.py {args}"
-subprocess.run(f"{final_args}", shell=True)
+def get_subfolders_with_supported_images(folder):
+    subfolders = [os.path.join(folder, subfolder) for subfolder in os.listdir(folder) if os.path.isdir(os.path.join(folder, subfolder))]
+    return [subfolder for subfolder in subfolders if len(get_supported_images(subfolder)) > 0]
+
+if not recursive:
+    config = {
+        "_train_data_dir": train_data_dir,
+        "_out_json": metadata,
+        "recursive": recursive,
+        "full_path": recursive,
+        "clean_caption": clean_caption
+    }
+
+    args = make_args(config)
+
+    final_args = f"python merge_all_to_metadata.py {args}"
+    subprocess.run(f"{final_args}", shell=True)
+
+else:
+    train_supported_images = get_supported_images(train_data_dir)
+    train_subfolders = get_subfolders_with_supported_images(train_data_dir)
+
+    if train_supported_images:
+        folder_name = os.path.basename(train_data_dir)
+        config = {
+            "_train_data_dir": train_data_dir,
+            "_out_json": f"{metadata[:-5]}_{folder_name}.json",
+            "recursive": False,
+            "full_path": recursive,
+            "clean_caption": clean_caption
+        }
+
+        args = make_args(config)
+
+        final_args = f"python merge_all_to_metadata.py {args}"
+        subprocess.run(f"{final_args}", shell=True)
+
+    for subfolder in train_subfolders:
+        folder_name = os.path.basename(subfolder)
+        config = {
+            "_train_data_dir": subfolder,
+            "_out_json": f"{metadata[:-5]}_{folder_name}.json",
+            "recursive": recursive,
+            "full_path": recursive,
+            "clean_caption": clean_caption
+        }
+
+        args = make_args(config)
+
+        final_args = f"python merge_all_to_metadata.py {args}"
+        subprocess.run(f"{final_args}", shell=True)
 
 input("Press the Enter key to continue: ")
 
@@ -155,6 +203,8 @@ input("Press the Enter key to continue: ")
 # This code will create buckets based on the `max_resolution` provided for multi-aspect ratio training, and then convert all images within the `train_data_dir` to latents.
 v2 = False  # @param{type:"boolean"}
 model_dir = os.path.join(root_dir, "pretrained_model/AnyLoRA_noVae_fp16-pruned.safetensors")
+# If `recursive`, make JSON files for every top-level folder in `train_data_dir`.
+# If `recursive`, the JSON file names would be `{default_json_file_name[:-5]}_{folder_name}.json`
 input_json = os.path.join(root_dir, "LoRA/meta_clean.json")
 output_json = os.path.join(root_dir, "LoRA/meta_lat.json")
 batch_size = 32
@@ -165,36 +215,77 @@ flip_aug = True
 # Use the `recursive` option to process subfolders as well
 recursive = True
 
-config = {
-    "_train_data_dir": train_data_dir,
-    "_in_json": input_json,
-    "_out_json": output_json,
-    "_model_name_or_path": model_dir,
-    "recursive": recursive,
-    "full_path": recursive,
-    "v2": v2,
-    "flip_aug": flip_aug,
-    "min_bucket_reso": 320 if max_resolution != "512,512" else 256,
-    "max_bucket_reso": 1280 if max_resolution != "512,512" else 1024,
-    "batch_size": batch_size,
-    "max_data_loader_n_workers": max_data_loader_n_workers,
-    "max_resolution": max_resolution,
-    "mixed_precision": mixed_precision,
-}
+if not recursive:
+    config = {
+        "_train_data_dir": train_data_dir,
+        "_in_json": input_json,
+        "_out_json": output_json,
+        "_model_name_or_path": model_dir,
+        "recursive": recursive,
+        "full_path": recursive,
+        "v2": v2,
+        "flip_aug": flip_aug,
+        "min_bucket_reso": 320 if max_resolution != "512,512" else 256,
+        "max_bucket_reso": 1280 if max_resolution != "512,512" else 1024,
+        "batch_size": batch_size,
+        "max_data_loader_n_workers": max_data_loader_n_workers,
+        "max_resolution": max_resolution,
+        "mixed_precision": mixed_precision,
+    }
 
-args = ""
-for k, v in config.items():
-    if k.startswith("_"):
-        args += f'"{v}" '
-    elif isinstance(v, str):
-        args += f'--{k}="{v}" '
-    elif isinstance(v, bool) and v:
-        args += f"--{k} "
-    elif isinstance(v, float) and not isinstance(v, bool):
-        args += f"--{k}={v} "
-    elif isinstance(v, int) and not isinstance(v, bool):
-        args += f"--{k}={v} "
+    args = make_args(config)
 
-os.chdir(finetune_dir)
-final_args = f"python prepare_buckets_latents.py {args}"
-subprocess.run(f"{final_args}", shell=True)
+    final_args = f"python prepare_buckets_latents.py {args}"
+    subprocess.run(f"{final_args}", shell=True)
+
+else:
+    train_supported_images = get_supported_images(train_data_dir)
+    train_subfolders = get_subfolders_with_supported_images(train_data_dir)
+
+    if train_supported_images:
+        folder_name = os.path.basename(train_data_dir)
+        config = {
+            "_train_data_dir": train_data_dir,
+            "_in_json": f"{input_json[:-5]}_{folder_name}.json",
+            "_out_json": f"{output_json[:-5]}_{folder_name}.json",
+            "_model_name_or_path": model_dir,
+            "recursive": False,
+            "full_path": recursive,
+            "v2": v2,
+            "flip_aug": flip_aug,
+            "min_bucket_reso": 320 if max_resolution != "512,512" else 256,
+            "max_bucket_reso": 1280 if max_resolution != "512,512" else 1024,
+            "batch_size": batch_size,
+            "max_data_loader_n_workers": max_data_loader_n_workers,
+            "max_resolution": max_resolution,
+            "mixed_precision": mixed_precision,
+        }
+
+        args = make_args(config)
+
+        final_args = f"python prepare_buckets_latents.py {args}"
+        subprocess.run(f"{final_args}", shell=True)
+
+    for subfolder in train_subfolders:
+        folder_name = os.path.basename(subfolder)
+        config = {
+            "_train_data_dir": train_data_dir,
+            "_in_json": f"{input_json[:-5]}_{folder_name}.json",
+            "_out_json": f"{output_json[:-5]}_{folder_name}.json",
+            "_model_name_or_path": model_dir,
+            "recursive": recursive,
+            "full_path": recursive,
+            "v2": v2,
+            "flip_aug": flip_aug,
+            "min_bucket_reso": 320 if max_resolution != "512,512" else 256,
+            "max_bucket_reso": 1280 if max_resolution != "512,512" else 1024,
+            "batch_size": batch_size,
+            "max_data_loader_n_workers": max_data_loader_n_workers,
+            "max_resolution": max_resolution,
+            "mixed_precision": mixed_precision,
+        }
+
+        args = make_args(config)
+
+        final_args = f"python prepare_buckets_latents.py {args}"
+        subprocess.run(f"{final_args}", shell=True)
