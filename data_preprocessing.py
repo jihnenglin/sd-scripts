@@ -116,11 +116,11 @@ import glob
 repo_dir = os.path.join(root_dir, "sd-scripts")
 finetune_dir = os.path.join(repo_dir, "finetune")
 os.chdir(finetune_dir)
+json_dir = os.path.join(root_dir, "json")
 
 # Merge tags and/or captions exist in `train_data_dir` into one metadata JSON file, which will be used as the input for the bucketing section.
 # If `recursive`, additionally make JSON files for every top-level folder (`dataset.subset`) in `train_data_dir`.
 # If `recursive`, the additional JSON file names would be `{default_json_file_name[:-5]}_{folder_name}.json`
-json_dir = os.path.join(root_dir, "json")
 metadata = os.path.join(json_dir, "meta_clean.json")
 # Use `recursive` option to process subfolders as well
 recursive = True

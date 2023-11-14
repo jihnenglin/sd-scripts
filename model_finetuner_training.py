@@ -40,11 +40,13 @@ input("Press the Enter key to continue: ")
 import toml
 import glob
 
+json_dir = os.path.join(root_dir, "json")
+
 # This configuration is designed for `one concept` training. Refer to this [guide](https://rentry.org/kohyaminiguide#b-multi-concept-training) for multi-concept training.
 dataset_repeats = 1
 # If `recursive`, additionally make JSON files for every top-level folder (`dataset.subset`) in `train_data_dir`.
 # If `recursive`, the additional JSON file names would be `{default_json_file_name[:-5]}_{folder_name}.json`
-in_json = os.path.join(root_dir, "fine_tune/meta_lat.json")
+in_json = os.path.join(json_dir, "meta_lat.json")
 resolution = 768  # [512, 640, 768, 896, 1024]
 flip_aug = True
 # keep heading N tokens when shuffling caption tokens (token means comma separated strings)
@@ -69,7 +71,7 @@ def get_folder_name_and_num_repeats(folder):
 
     return folder_name, num_repeats
 
-train_data_dir = os.path.join(root_dir, "fine_tune/train_data")
+train_data_dir = os.path.join(root_dir, "train_data")
 train_supported_images = get_supported_images(train_data_dir)
 train_subfolders = get_subfolders_with_supported_images(train_data_dir)
 
