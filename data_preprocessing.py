@@ -216,6 +216,7 @@ mixed_precision = "no"  # ["no", "fp16", "bf16"]
 flip_aug = True
 # Use the `recursive` option to process subfolders as well
 recursive = True
+skip_existing = False
 
 if not recursive:
     config = {
@@ -233,6 +234,7 @@ if not recursive:
         "max_data_loader_n_workers": max_data_loader_n_workers,
         "max_resolution": max_resolution,
         "mixed_precision": mixed_precision,
+        "skip_existing": skip_existing,
     }
 
     args = make_args(config)
@@ -261,6 +263,7 @@ else:
             "max_data_loader_n_workers": max_data_loader_n_workers,
             "max_resolution": max_resolution,
             "mixed_precision": mixed_precision,
+            "skip_existing": skip_existing,
         }
 
         args = make_args(config)
@@ -285,6 +288,7 @@ else:
             "max_data_loader_n_workers": max_data_loader_n_workers,
             "max_resolution": max_resolution,
             "mixed_precision": mixed_precision,
+            "skip_existing": skip_existing,
         }
 
         args = make_args(config)
