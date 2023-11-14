@@ -11,7 +11,7 @@ if not project_name:
 
 pretrained_model_name_or_path = os.path.join(root_dir, "pretrained_model/AnyLoRA_noVae_fp16-pruned.safetensors")
 vae = ""
-output_dir = os.path.join(root_dir, "LoRA/output")
+output_dir = os.path.join(root_dir, "fine_tune/output")
 # Resume training from saved state
 resume_path = ""
 #resume_path = os.path.join(output_dir, "last-state")
@@ -44,7 +44,7 @@ import glob
 dataset_repeats = 1
 # If `recursive`, additionally make JSON files for every top-level folder (`dataset.subset`) in `train_data_dir`.
 # If `recursive`, the additional JSON file names would be `{default_json_file_name[:-5]}_{folder_name}.json`
-in_json = os.path.join(root_dir, "LoRA/meta_lat.json")
+in_json = os.path.join(root_dir, "fine_tune/meta_lat.json")
 resolution = 768  # [512, 640, 768, 896, 1024]
 flip_aug = True
 # keep heading N tokens when shuffling caption tokens (token means comma separated strings)
@@ -69,7 +69,7 @@ def get_folder_name_and_num_repeats(folder):
 
     return folder_name, num_repeats
 
-train_data_dir = os.path.join(root_dir, "LoRA/train_data")
+train_data_dir = os.path.join(root_dir, "fine_tune/train_data")
 train_supported_images = get_supported_images(train_data_dir)
 train_subfolders = get_subfolders_with_supported_images(train_data_dir)
 
@@ -114,7 +114,7 @@ for subfolder in train_subfolders:
         "num_repeats": num_repeats,
     })
 
-config_dir = os.path.join(root_dir, "LoRA/config")
+config_dir = os.path.join(root_dir, "fine_tune/config")
 dataset_config = os.path.join(config_dir, "dataset_config.toml")
 
 for key in config:
@@ -135,103 +135,37 @@ print(config_str)
 input("Press the Enter key to continue: ")
 
 
-## LoRA and Optimizer Config
-
-### LoRA Config:
-network_category = "LoRA"  # ["LoRA", "LoCon", "LoCon_Lycoris", "LoHa"]
-
-# Recommended values:
-
-# | network_category | network_dim | network_alpha | conv_dim | conv_alpha |
-# | :---: | :---: | :---: | :---: | :---: |
-# | LoRA | 32 | 1 | - | - |
-# | LoCon | 16 | 8 | 8 | 1 |
-# | LoHa | 8 | 4 | 4 | 1 |
-
-# It's recommended not to set `network_dim` and `network_alpha` higher than 64, especially for `LoHa`.
-# If you want to use a higher value for `dim` or `alpha`, consider using a higher learning rate, as models with higher dimensions tend to learn faster.
-network_dim = 32
-network_alpha = 16
-# `conv_dim` and `conv_alpha` are needed to train `LoCon` and `LoHa`; skip them if you are training normal `LoRA`. However, when in doubt, set `dim = alpha`.
-conv_dim = 32
-conv_alpha = 16
-# You can specify this field for resume training.
-network_weight = ""
-#network_weight = os.path.join(output_dir, "last.safetensors")
-network_module = "lycoris.kohya" if network_category in ["LoHa", "LoCon_Lycoris"] else "networks.lora"
-network_args = "" if network_category == "LoRA" else [
-    f"conv_dim={conv_dim}", f"conv_alpha={conv_alpha}",
-    ]
-# See here (https://github.com/kohya-ss/sd-scripts/pull/545?ref=blog.hinablue.me)
-network_dropout = 0
-scale_weight_norms = -1  # -1 to disable
-### Optimizer Config:
+## Optimizer Config
 # `AdamW8bit` was the old `--use_8bit_adam`.
 optimizer_type = "AdamW8bit"  # ["AdamW", "AdamW8bit", "PagedAdamW8bit", "PagedAdamW32bit", "Lion8bit", "PagedLion8bit", "Lion", "SGDNesterov", "SGDNesterov8bit", "DAdaptation", "DAdaptAdaGrad", "DAdaptAdam", "DAdaptAdan", "DAdaptAdanIP", "DAdaptLion", "DAdaptSGD", "AdaFactor"]
-# Additional arguments for optimizer, e.g: `["decouple=True","weight_decay=0.6", "betas=0.9,0.999"]`
-optimizer_args = ""
-# Set `unet_lr` to `1.0` if you use `DAdaptation` optimizer, because it's a [free learning rate](https://github.com/facebookresearch/dadaptation) algorithm.
-# However, it is recommended to set `text_encoder_lr = 0.5 * unet_lr`.
-# Also, you don't need to specify `learning_rate` value if both `unet_lr` and `text_encoder_lr` are defined.
-train_unet = True
-unet_lr = 1e-4
-train_text_encoder = True
-text_encoder_lr = 5e-5
+# Set `learning_rate` to `1.0` if you use `DAdaptation` optimizer, as it's a [free learning rate](https://github.com/facebookresearch/dadaptation) algorithm.
+# You probably need to specify `optimizer_args` for custom optimizer, like using `["decouple=true","weight_decay=0.6"]` for `DAdaptation`.
+learning_rate = 2e-6
 max_grad_norm = 1.0  # default = 1.0; 0 for no clipping
+# Additional arguments for optimizer, e.g: `["decouple=true","weight_decay=0.6", "betas=0.9,0.999"]`
+optimizer_args = ""
 lr_scheduler = "constant"  # ["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"]
 lr_warmup_steps = 0
 # You can define `num_cycles` value for `cosine_with_restarts` or `power` value for `polynomial` in the field below.
 lr_scheduler_num_cycles = 0
 lr_scheduler_power = 0
+train_text_encoder = False
+learning_rate_te = 1e-6
 
-if network_category == "LoHa":
-  network_args.append("algo=loha")
-elif network_category == "LoCon_Lycoris":
-  network_args.append("algo=lora")
-
-print("- LoRA Config:")
-print(f"  - Additional network category: {network_category}")
-print(f"  - Loading network module: {network_module}")
-if not network_category == "LoRA":
-  print(f"  - network args: {network_args}")
-print(f"  - {network_module} linear_dim set to: {network_dim}")
-print(f"  - {network_module} linear_alpha set to: {network_alpha}")
-if not network_category == "LoRA":
-  print(f"  - {network_module} conv_dim set to: {conv_dim}")
-  print(f"  - {network_module} conv_alpha set to: {conv_alpha}")
-
-if not network_weight:
-    print("  - No LoRA weight loaded.")
-else:
-    if os.path.exists(network_weight):
-        print(f"  - Loading LoRA weight: {network_weight}")
-    else:
-        print(f"  - {network_weight} does not exist.")
-        network_weight = ""
-
-print(f"  - network_dropout: {network_dropout}")
-print(f"  - scale_weight_norms: {scale_weight_norms}") if not scale_weight_norms == -1 else ""
-
-print("- Optimizer Config:")
-print(f"  - Using {optimizer_type} as Optimizer")
+print(f"Using {optimizer_type} as Optimizer")
+print("Learning rate: ", learning_rate)
+print("max_grad_norm: ", max_grad_norm)
 if optimizer_args:
-    print(f"  - Optimizer Args: {optimizer_args}")
-if train_unet and train_text_encoder:
-    print("  - Train UNet and Text Encoder")
-    print(f"    - UNet learning rate: {unet_lr}")
-    print(f"    - Text encoder learning rate: {text_encoder_lr}")
-if train_unet and not train_text_encoder:
-    print("  - Train UNet only")
-    print(f"    - UNet learning rate: {unet_lr}")
-if train_text_encoder and not train_unet:
-    print("  - Train Text Encoder only")
-    print(f"    - Text encoder learning rate: {text_encoder_lr}")
-print(f"  - Learning rate warmup steps: {lr_warmup_steps}")
-print(f"  - Learning rate Scheduler: {lr_scheduler}")
+    print(f"Optimizer Args :", optimizer_args)
+print("Learning rate Scheduler:", lr_scheduler)
+print("Learning rate warmup steps: ", lr_warmup_steps)
 if lr_scheduler == "cosine_with_restarts":
-    print(f"  - lr_scheduler_num_cycles: {lr_scheduler_num_cycles}")
+    print("- lr_scheduler_num_cycles: ", lr_scheduler_num_cycles)
 elif lr_scheduler == "polynomial":
-    print(f"  - lr_scheduler_power: {lr_scheduler_power}")
+    print("- lr_scheduler_power: ", lr_scheduler_power)
+if train_text_encoder:
+    print(f"Train Text Encoder")
+    print("Text encoder learning rate: ", learning_rate_te)
 
 input("Press the Enter key to continue: ")
 
@@ -251,12 +185,12 @@ gradient_checkpointing = False
 gradient_accumulation_steps = 2
 mixed_precision = "fp16"  # ["no","fp16","bf16"]
 clip_skip = 2
-logging_dir = os.path.join(root_dir, "LoRA/logs")
+logging_dir = os.path.join(root_dir, "fine_tune/logs")
 noise_offset = 0.1
 lowram = False
 enable_sample_prompt = True
 sampler = "ddim"  # ["ddim", "pndm", "lms", "euler", "euler_a", "heun", "dpm_2", "dpm_2_a", "dpmsolver","dpmsolver++", "dpmsingle", "k_lms", "k_euler", "k_euler_a", "k_dpm_2", "k_dpm_2_a"]
-save_model_as = "safetensors"  # ["ckpt", "pt", "safetensors"]
+save_model_as = "safetensors"  # ["ckpt", "safetensors", "diffusers", "diffusers_safetensors"]
 # Gamma for reducing the weight of high-loss timesteps. Lower numbers have a stronger effect. The paper recommends 5. Read the paper [here](https://arxiv.org/abs/2303.09556).
 min_snr_gamma = -1  # -1 to disable
 
@@ -278,30 +212,17 @@ config = {
         "v_parameterization": v_parameterization if v2 and v_parameterization else False,
         "pretrained_model_name_or_path": pretrained_model_name_or_path,
     },
-    "additional_network_arguments": {
-        "no_metadata": False,
-        "unet_lr": float(unet_lr) if train_unet else None,
-        "text_encoder_lr": float(text_encoder_lr) if train_text_encoder else None,
-        "network_weights": network_weight,
-        "network_module": network_module,
-        "network_dim": network_dim,
-        "network_alpha": network_alpha,
-        "network_dropout": network_dropout,
-        "network_args": network_args,
-        "network_train_unet_only": True if train_unet and not train_text_encoder else False,
-        "network_train_text_encoder_only": True if train_text_encoder and not train_unet else False,
-        "training_comment": None,
-        "scale_weight_norms": scale_weight_norms if not scale_weight_norms == -1 else None,
-    },
     "optimizer_arguments": {
         "optimizer_type": optimizer_type,
-        "learning_rate": unet_lr,
+        "learning_rate": learning_rate,
         "max_grad_norm": max_grad_norm,
         "optimizer_args": eval(optimizer_args) if optimizer_args else None,
         "lr_scheduler": lr_scheduler,
         "lr_warmup_steps": lr_warmup_steps,
         "lr_scheduler_num_cycles": lr_scheduler_num_cycles if lr_scheduler == "cosine_with_restarts" else None,
         "lr_scheduler_power": lr_scheduler_power if lr_scheduler == "polynomial" else None,
+        "train_text_encoder": train_text_encoder,
+        "learning_rate_te": learning_rate_te if train_text_encoder else None,
     },
     "dataset_arguments": {
         "debug_dataset": False,
@@ -375,18 +296,18 @@ input("Press the Enter key to continue: ")
 ## Start Training
 
 # Check your config here if you want to edit something:
-# - `sample_prompt` : ~/sd-train/LoRA/config/sample_prompt.txt
-# - `config_file` : ~/sd-train/LoRA/config/config_file.toml
-# - `dataset_config` : ~/sd-train/LoRA/config/dataset_config.toml
+# - `sample_prompt` : ~/sd-train/fine_tune/config/sample_prompt.txt
+# - `config_file` : ~/sd-train/fine_tune/config/config_file.toml
+# - `dataset_config` : ~/sd-train/fine_tune/config/dataset_config.toml
 
-# Generated sample can be seen here: ~/sd-train/LoRA/output/sample
+# Generated sample can be seen here: ~/sd-train/fine_tune/output/sample
 
 # You can import config from another session if you want.
 import subprocess
 
-sample_prompt = os.path.join(root_dir, "LoRA/config/sample_prompt.txt")
-config_file = os.path.join(root_dir, "LoRA/config/config_file.toml")
-dataset_config = os.path.join(root_dir, "LoRA/config/dataset_config.toml")
+sample_prompt = os.path.join(root_dir, "fine_tune/config/sample_prompt.txt")
+config_file = os.path.join(root_dir, "fine_tune/config/config_file.toml")
+dataset_config = os.path.join(root_dir, "fine_tune/config/dataset_config.toml")
 
 accelerate_config = os.path.join(repo_dir, "accelerate_config/config.yaml")
 
@@ -419,7 +340,7 @@ def make_args(config):
 
 accelerate_args = make_args(accelerate_conf)
 train_args = make_args(train_conf)
-final_args = f"accelerate launch {accelerate_args} train_network.py {train_args}"
+final_args = f"accelerate launch {accelerate_args} fine_tune.py {train_args}"
 
 os.chdir(repo_dir)
 subprocess.run(f"{final_args}", shell=True)

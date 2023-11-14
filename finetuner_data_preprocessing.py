@@ -6,7 +6,7 @@ from tqdm import tqdm
 from PIL import Image
 
 root_dir = "~/sd-train"
-train_data_dir = os.path.join(root_dir, "LoRA/train_data")
+train_data_dir = os.path.join(root_dir, "fine_tune/train_data")
 
 os.chdir(root_dir)
 
@@ -120,7 +120,7 @@ os.chdir(finetune_dir)
 # Merge tags and/or captions exist in `train_data_dir` into one metadata JSON file, which will be used as the input for the bucketing section.
 # If `recursive`, additionally make JSON files for every top-level folder (`dataset.subset`) in `train_data_dir`.
 # If `recursive`, the additional JSON file names would be `{default_json_file_name[:-5]}_{folder_name}.json`
-metadata = os.path.join(root_dir, "LoRA/meta_clean.json")
+metadata = os.path.join(root_dir, "fine_tune/meta_clean.json")
 # Use `recursive` option to process subfolders as well
 recursive = True
 # Use `clean_caption` option to clean such as duplicate tags, `women` to `girl`, etc
@@ -206,8 +206,8 @@ v2 = False  # @param{type:"boolean"}
 model_dir = os.path.join(root_dir, "pretrained_model/AnyLoRA_noVae_fp16-pruned.safetensors")
 # If `recursive`, additionally make JSON files for every top-level folder (`dataset.subset`) in `train_data_dir`.
 # If `recursive`, the additional JSON file names would be `{default_json_file_name[:-5]}_{folder_name}.json`
-input_json = os.path.join(root_dir, "LoRA/meta_clean.json")
-output_json = os.path.join(root_dir, "LoRA/meta_lat.json")
+input_json = os.path.join(root_dir, "fine_tune/meta_clean.json")
+output_json = os.path.join(root_dir, "fine_tune/meta_lat.json")
 batch_size = 32
 max_data_loader_n_workers = 128
 max_resolution = "768,768"  # ["512,512", "640,640", "768,768"]
