@@ -270,7 +270,7 @@ else:
     for subfolder in train_subfolders:
         folder_name = os.path.basename(subfolder)
         config = {
-            "_train_data_dir": train_data_dir,
+            "_train_data_dir": subfolder,
             "_in_json": f"{input_json[:-5]}_{folder_name}.json",
             "_out_json": f"{output_json[:-5]}_{folder_name}.json",
             "_model_name_or_path": model_dir,
