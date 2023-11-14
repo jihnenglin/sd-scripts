@@ -203,7 +203,7 @@ input("Press the Enter key to continue: ")
 
 ## Bucketing and Latents Caching
 # This code will create buckets based on the `max_resolution` provided for multi-aspect ratio training, and then convert all images within the `train_data_dir` to latents.
-v2 = False  # @param{type:"boolean"}
+v2 = False
 model_dir = os.path.join(root_dir, "pretrained_model/AnyLoRA_noVae_fp16-pruned.safetensors")
 # If `recursive`, additionally make JSON files for every top-level folder (`dataset.subset`) in `train_data_dir`.
 # If `recursive`, the additional JSON file names would be `{default_json_file_name[:-5]}_{folder_name}.json`
