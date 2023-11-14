@@ -7,6 +7,8 @@ repo_dir = os.path.join(root_dir, "sd-scripts")
 training_dir = os.path.join(root_dir, "LoRA")
 pretrained_model = os.path.join(root_dir, "pretrained_model")
 vae_dir = os.path.join(root_dir, "vae")
+train_data_dir = os.path.join(root_dir, "train_data")
+json_dir = os.path.join(root_dir, "json")
 config_dir = os.path.join(training_dir, "config")
 
 # repo_dir
@@ -27,7 +29,9 @@ for dir in [
     training_dir,
     config_dir,
     pretrained_model,
-    vae_dir
+    vae_dir,
+    train_data_dir,
+    json_dir,
 ]:
     os.makedirs(dir, exist_ok=True)
 
@@ -37,12 +41,3 @@ install_dependencies()
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["SAFETENSORS_FAST_GPU"] = "1"
-
-
-## Locating Train Data Directory
-# Define location of your training data. This cell will also create a folder based on your input.
-# This folder will serve as the target folder for scraping, tagging, bucketing, and training in the next cell.
-train_data_dir = os.path.join(root_dir, "LoRA/train_data")
-
-os.makedirs(train_data_dir, exist_ok=True)
-print(f"Your train data directory : {train_data_dir}")
