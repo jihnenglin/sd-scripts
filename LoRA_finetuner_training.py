@@ -157,9 +157,6 @@ network_alpha = 16
 # `conv_dim` and `conv_alpha` are needed to train `LoCon` and `LoHa`; skip them if you are training normal `LoRA`. However, when in doubt, set `dim = alpha`.
 conv_dim = 32
 conv_alpha = 16
-# You can specify this field for resume training.
-network_weight = ""
-#network_weight = os.path.join(output_dir, "last.safetensors")
 network_module = "lycoris.kohya" if network_category in ["LoHa", "LoCon_Lycoris"] else "networks.lora"
 network_args = "" if network_category == "LoRA" else [
     f"conv_dim={conv_dim}", f"conv_alpha={conv_alpha}",
@@ -202,15 +199,6 @@ if not network_category == "LoRA":
   print(f"  - {network_module} conv_dim set to: {conv_dim}")
   print(f"  - {network_module} conv_alpha set to: {conv_alpha}")
 
-if not network_weight:
-    print("  - No LoRA weight loaded.")
-else:
-    if os.path.exists(network_weight):
-        print(f"  - Loading LoRA weight: {network_weight}")
-    else:
-        print(f"  - {network_weight} does not exist.")
-        network_weight = ""
-
 print(f"  - network_dropout: {network_dropout}")
 print(f"  - scale_weight_norms: {scale_weight_norms}") if not scale_weight_norms == -1 else ""
 
@@ -242,12 +230,13 @@ input("Press the Enter key to continue: ")
 save_precision = "fp16"  # [None, "float", "fp16", "bf16"] (None for not changing)
 save_n_epochs_type = "save_every_n_epochs"  # ["save_every_n_epochs", "save_n_epoch_ratio"]
 save_n_epochs_type_value = 5
-save_state = False
+save_state = True
 train_batch_size = 8
 max_token_length = 225
 cross_attention = "sdpa" # [None, "mem_eff_attn", "xformers", "sdpa"]
 max_train_n_type = "max_train_epochs" # ["max_train_steps", "max_train_epochs"]
 max_train_n_type_value = 10
+max_data_loader_n_workers = 64
 seed = 1450
 gradient_checkpointing = False
 gradient_accumulation_steps = 2
@@ -260,7 +249,7 @@ enable_sample_prompt = True
 sampler = "ddim"  # ["ddim", "pndm", "lms", "euler", "euler_a", "heun", "dpm_2", "dpm_2_a", "dpmsolver","dpmsolver++", "dpmsingle", "k_lms", "k_euler", "k_euler_a", "k_dpm_2", "k_dpm_2_a"]
 save_model_as = "safetensors"  # ["ckpt", "pt", "safetensors"]
 # Gamma for reducing the weight of high-loss timesteps. Lower numbers have a stronger effect. The paper recommends 5. Read the paper [here](https://arxiv.org/abs/2303.09556).
-min_snr_gamma = -1  # -1 to disable
+min_snr_gamma = 5  # -1 to disable
 
 repo_dir = os.path.join(root_dir, "sd-scripts")
 os.chdir(repo_dir)
@@ -284,7 +273,6 @@ config = {
         "no_metadata": False,
         "unet_lr": float(unet_lr) if train_unet else None,
         "text_encoder_lr": float(text_encoder_lr) if train_text_encoder else None,
-        "network_weights": network_weight,
         "network_module": network_module,
         "network_dim": network_dim,
         "network_alpha": network_alpha,
@@ -319,14 +307,14 @@ config = {
         "save_state": save_state,
         "resume": resume_path,
         "train_batch_size": train_batch_size,
-        "max_token_length": 225,
+        "max_token_length": max_token_length,
         "mem_eff_attn": True if cross_attention == "mem_eff_attn" else False,
         "xformers": True if cross_attention == "xformers" else False,
         "sdpa": True if cross_attention == "sdpa" else False,
         "vae": vae,
         "max_train_steps": max_train_n_type_value if max_train_n_type == "max_train_steps" else None,
         "max_train_epochs": max_train_n_type_value if max_train_n_type == "max_train_epochs" else None,
-        "max_data_loader_n_workers": 64,
+        "max_data_loader_n_workers": max_data_loader_n_workers,
         "persistent_data_loader_workers": True,
         "seed": seed if seed > 0 else None,
         "gradient_checkpointing": gradient_checkpointing,
