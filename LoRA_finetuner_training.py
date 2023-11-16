@@ -256,7 +256,9 @@ gradient_accumulation_steps = 2
 mixed_precision = "fp16"  # ["no","fp16","bf16"]
 clip_skip = 2
 logging_dir = os.path.join(root_dir, "LoRA/logs")
-noise_offset = 0.1
+noise_offset = 0  # 0 to disable
+multires_noise_iterations = 10  # 0 to disable
+multires_noise_discount = 0.3  # 0 to disable
 lowram = False
 enable_sample_prompt = True
 sampler = "ddim"  # ["ddim", "pndm", "lms", "euler", "euler_a", "heun", "dpm_2", "dpm_2_a", "dpmsolver","dpmsolver++", "dpmsingle", "k_lms", "k_euler", "k_euler_a", "k_dpm_2", "k_dpm_2_a"]
@@ -338,6 +340,8 @@ config = {
         "logging_dir": logging_dir,
         "log_prefix": project_name,
         "noise_offset": noise_offset if noise_offset > 0 else None,
+        "multires_noise_iterations": multires_noise_iterations if multires_noise_iterations > 0 else None,
+        "multires_noise_discount": multires_noise_discount if multires_noise_discount > 0 else None,
         "lowram": lowram,
         "min_snr_gamma": min_snr_gamma if not min_snr_gamma == -1 else None,
     },
