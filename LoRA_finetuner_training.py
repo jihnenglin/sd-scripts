@@ -157,6 +157,10 @@ network_alpha = 16
 # `conv_dim` and `conv_alpha` are needed to train `LoCon` and `LoHa`; skip them if you are training normal `LoRA`. However, when in doubt, set `dim = alpha`.
 conv_dim = 32
 conv_alpha = 16
+# About dropout and scale_weight_norms, see here (https://github.com/kohya-ss/sd-scripts/pull/545?ref=blog.hinablue.me)
+# Don't use `resume` if you use `network_dropout`; use `network_weight` instead
+network_dropout = 0
+scale_weight_norms = -1  # -1 to disable
 # You can specify this field for resume training.
 network_weight = ""
 #network_weight = os.path.join(output_dir, "last.safetensors")
@@ -164,9 +168,6 @@ network_module = "lycoris.kohya" if network_category in ["LoHa", "LoCon_Lycoris"
 network_args = "" if network_category == "LoRA" else [
     f"conv_dim={conv_dim}", f"conv_alpha={conv_alpha}",
     ]
-# See here (https://github.com/kohya-ss/sd-scripts/pull/545?ref=blog.hinablue.me)
-network_dropout = 0
-scale_weight_norms = -1  # -1 to disable
 ### Optimizer Config:
 # `AdamW8bit` was the old `--use_8bit_adam`.
 optimizer_type = "AdamW8bit"  # ["AdamW", "AdamW8bit", "PagedAdamW8bit", "PagedAdamW32bit", "Lion8bit", "PagedLion8bit", "Lion", "SGDNesterov", "SGDNesterov8bit", "DAdaptation", "DAdaptAdaGrad", "DAdaptAdam", "DAdaptAdan", "DAdaptAdanIP", "DAdaptLion", "DAdaptSGD", "AdaFactor"]
@@ -245,11 +246,11 @@ save_n_epochs_type_value = 5
 save_state = True
 train_batch_size = 8
 max_token_length = 225
-cross_attention = "sdpa" # [None, "mem_eff_attn", "xformers", "sdpa"]
-max_train_n_type = "max_train_epochs" # ["max_train_steps", "max_train_epochs"]
+cross_attention = "sdpa"  # [None, "mem_eff_attn", "xformers", "sdpa"]
+max_train_n_type = "max_train_epochs"  # ["max_train_steps", "max_train_epochs"]
 max_train_n_type_value = 10
 max_data_loader_n_workers = 64
-seed = 1450
+seed = -1  # -1 for random seed
 gradient_checkpointing = False
 gradient_accumulation_steps = 2
 mixed_precision = "fp16"  # ["no","fp16","bf16"]
