@@ -241,15 +241,15 @@ input("Press the Enter key to continue: ")
 
 ## Training Config
 save_precision = "fp16"  # [None, "float", "fp16", "bf16"] (None for not changing)
-save_n_epochs_type = "save_every_n_epochs"  # ["save_every_n_epochs", "save_n_epoch_ratio"]
-save_n_epochs_type_value = 5
+save_n_type = "save_every_n_epochs"  # ["save_every_n_epochs", "save_every_n_steps", "save_n_epoch_ratio"]
+save_n_type_value = 5
 save_state = True
 train_batch_size = 8
 max_token_length = 225
 cross_attention = "sdpa"  # [None, "mem_eff_attn", "xformers", "sdpa"]
 max_train_n_type = "max_train_epochs"  # ["max_train_steps", "max_train_epochs"]
 max_train_n_type_value = 10
-max_data_loader_n_workers = 64
+max_data_loader_n_workers = 32
 seed = -1  # -1 for random seed
 gradient_checkpointing = False
 gradient_accumulation_steps = 2
@@ -316,8 +316,9 @@ config = {
         "output_dir": output_dir,
         "output_name": project_name,
         "save_precision": save_precision,
-        "save_every_n_epochs": save_n_epochs_type_value if save_n_epochs_type == "save_every_n_epochs" else None,
-        "save_n_epoch_ratio": save_n_epochs_type_value if save_n_epochs_type == "save_n_epoch_ratio" else None,
+        "save_every_n_epochs": save_n_type_value if save_n_type == "save_every_n_epochs" else None,
+        "save_every_n_steps": save_n_type_value if save_n_type == "save_every_n_steps" else None,
+        "save_n_epoch_ratio": save_n_type_value if save_n_type == "save_n_epoch_ratio" else None,
         "save_last_n_epochs": None,
         "save_last_n_epochs_state": None,
         "save_state": save_state,
@@ -346,8 +347,8 @@ config = {
         "min_snr_gamma": min_snr_gamma if not min_snr_gamma == -1 else None,
     },
     "sample_prompt_arguments": {
-        "sample_every_n_steps": 100 if enable_sample_prompt and max_train_n_type == "max_train_steps" else 999999,
-        "sample_every_n_epochs": 1 if enable_sample_prompt and max_train_n_type == "max_train_epochs" else 999999,
+        "sample_every_n_steps": 100 if enable_sample_prompt and max_train_n_type == "max_train_steps" else None,
+        "sample_every_n_epochs": 1 if enable_sample_prompt and max_train_n_type == "max_train_epochs" else None,
         "sample_sampler": sampler,
     },
     "saving_arguments": {
