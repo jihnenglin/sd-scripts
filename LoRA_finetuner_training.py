@@ -157,6 +157,9 @@ network_alpha = 16
 # `conv_dim` and `conv_alpha` are needed to train `LoCon` and `LoHa`; skip them if you are training normal `LoRA`. However, when in doubt, set `dim = alpha`.
 conv_dim = 32
 conv_alpha = 16
+# You can specify this field for resume training.
+network_weight = ""
+#network_weight = os.path.join(output_dir, "last.safetensors")
 network_module = "lycoris.kohya" if network_category in ["LoHa", "LoCon_Lycoris"] else "networks.lora"
 network_args = "" if network_category == "LoRA" else [
     f"conv_dim={conv_dim}", f"conv_alpha={conv_alpha}",
@@ -201,6 +204,15 @@ if not network_category == "LoRA":
 
 print(f"  - network_dropout: {network_dropout}")
 print(f"  - scale_weight_norms: {scale_weight_norms}") if not scale_weight_norms == -1 else ""
+
+if not network_weight:
+    print("  - No LoRA weight loaded.")
+else:
+    if os.path.exists(network_weight):
+        print(f"  - Loading LoRA weight: {network_weight}")
+    else:
+        print(f"  - {network_weight} does not exist.")
+        network_weight = ""
 
 print("- Optimizer Config:")
 print(f"  - Using {optimizer_type} as Optimizer")
@@ -273,6 +285,7 @@ config = {
         "no_metadata": False,
         "unet_lr": float(unet_lr) if train_unet else None,
         "text_encoder_lr": float(text_encoder_lr) if train_text_encoder else None,
+        "network_weights": network_weight,
         "network_module": network_module,
         "network_dim": network_dim,
         "network_alpha": network_alpha,
