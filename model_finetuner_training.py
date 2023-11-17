@@ -51,7 +51,7 @@ resolution = 768  # [512, 640, 768, 896, 1024]
 flip_aug = True
 # keep heading N tokens when shuffling caption tokens (token means comma separated strings)
 keep_tokens = 0
-color_aug = True
+color_aug = False
 
 def get_supported_images(folder):
     supported_extensions = (".png", ".jpg", ".jpeg", ".webp", ".bmp")
@@ -231,6 +231,7 @@ config = {
     },
     "dataset_arguments": {
         "debug_dataset": False,
+        "cache_latents_to_disk": True if not color_aug else False,
     },
     "training_arguments": {
         "output_dir": output_dir,
