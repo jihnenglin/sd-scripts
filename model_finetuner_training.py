@@ -152,7 +152,7 @@ lr_warmup_steps = 0
 lr_scheduler_num_cycles = 0
 lr_scheduler_power = 0
 train_text_encoder = False
-learning_rate_te = 1e-6
+learning_rate_te = 2e-6
 
 print(f"Using {optimizer_type} as Optimizer")
 print("Learning rate: ", learning_rate)
