@@ -125,7 +125,7 @@ metadata = os.path.join(json_dir, "meta_clean.json")
 # Use `recursive` option to process subfolders as well
 recursive = True
 # Use `clean_caption` option to clean such as duplicate tags, `women` to `girl`, etc
-clean_caption = True
+clean_caption = False
 
 def make_args(config):
     args = ""

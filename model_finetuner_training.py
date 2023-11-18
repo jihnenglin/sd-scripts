@@ -49,9 +49,9 @@ dataset_repeats = 1
 in_json = os.path.join(json_dir, "meta_lat.json")
 resolution = 768  # [512, 640, 768, 896, 1024]
 flip_aug = True
+color_aug = False
 # keep heading N tokens when shuffling caption tokens (token means comma separated strings)
 keep_tokens = 0
-color_aug = False
 
 def get_supported_images(folder):
     supported_extensions = (".png", ".jpg", ".jpeg", ".webp", ".bmp")
@@ -221,7 +221,7 @@ config = {
         "optimizer_type": optimizer_type,
         "learning_rate": learning_rate,
         "max_grad_norm": max_grad_norm,
-        "optimizer_args": eval(optimizer_args) if optimizer_args else None,
+        "optimizer_args": optimizer_args if optimizer_args else None,
         "lr_scheduler": lr_scheduler,
         "lr_warmup_steps": lr_warmup_steps,
         "lr_scheduler_num_cycles": lr_scheduler_num_cycles if lr_scheduler == "cosine_with_restarts" else None,
