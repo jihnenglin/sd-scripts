@@ -145,7 +145,7 @@ optimizer_type = "AdamW8bit"  # ["AdamW", "AdamW8bit", "PagedAdamW8bit", "PagedA
 learning_rate = 2e-6
 max_grad_norm = 1.0  # default = 1.0; 0 for no clipping
 # Additional arguments for optimizer, e.g: `["decouple=true","weight_decay=0.6", "betas=0.9,0.999"]`
-optimizer_args = ""
+optimizer_args = ["weight_decay=0.1"]
 lr_scheduler = "constant"  # ["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"]
 lr_warmup_steps = 0
 # You can define `num_cycles` value for `cosine_with_restarts` or `power` value for `polynomial` in the field below.

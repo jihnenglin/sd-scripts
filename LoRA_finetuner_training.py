@@ -146,21 +146,21 @@ network_category = "LoRA"  # ["LoRA", "LoCon", "LoCon_Lycoris", "LoHa"]
 
 # | network_category | network_dim | network_alpha | conv_dim | conv_alpha |
 # | :---: | :---: | :---: | :---: | :---: |
-# | LoRA | 32 | 1 | - | - |
-# | LoCon | 16 | 8 | 8 | 1 |
-# | LoHa | 8 | 4 | 4 | 1 |
+# | LoRA | 16 | 8 | - | - |
+# | LoCon | 16 | 8 | 16 | 8 |
+# | LoHa | 8 | 4 | 8 | 4 |
 
 # It's recommended not to set `network_dim` and `network_alpha` higher than 64, especially for `LoHa`.
 # If you want to use a higher value for `dim` or `alpha`, consider using a higher learning rate, as models with higher dimensions tend to learn faster.
-network_dim = 32
-network_alpha = 16
+network_dim = 16
+network_alpha = 8
 # `conv_dim` and `conv_alpha` are needed to train `LoCon` and `LoHa`; skip them if you are training normal `LoRA`. However, when in doubt, set `dim = alpha`.
-conv_dim = 32
-conv_alpha = 16
+conv_dim = 16
+conv_alpha = 8
 # About dropout and scale_weight_norms, see here (https://github.com/kohya-ss/sd-scripts/pull/545?ref=blog.hinablue.me)
 # Don't use `resume` if you use `network_dropout`; use `network_weight` instead
 network_dropout = 0
-scale_weight_norms = -1  # -1 to disable
+scale_weight_norms = 0  # 0 to disable
 # You can specify this field for resume training.
 network_weight = ""
 #network_weight = os.path.join(output_dir, "last.safetensors")
@@ -172,14 +172,14 @@ network_args = "" if network_category == "LoRA" else [
 # `AdamW8bit` was the old `--use_8bit_adam`.
 optimizer_type = "AdamW8bit"  # ["AdamW", "AdamW8bit", "PagedAdamW8bit", "PagedAdamW32bit", "Lion8bit", "PagedLion8bit", "Lion", "SGDNesterov", "SGDNesterov8bit", "DAdaptation", "DAdaptAdaGrad", "DAdaptAdam", "DAdaptAdan", "DAdaptAdanIP", "DAdaptLion", "DAdaptSGD", "AdaFactor"]
 # Additional arguments for optimizer, e.g: `["decouple=True","weight_decay=0.6", "betas=0.9,0.999"]`
-optimizer_args = ""
+optimizer_args = ["weight_decay=0.1"]
 # Set `unet_lr` to `1.0` if you use `DAdaptation` optimizer, because it's a [free learning rate](https://github.com/facebookresearch/dadaptation) algorithm.
 # However, it is recommended to set `text_encoder_lr = 0.5 * unet_lr`.
 # Also, you don't need to specify `learning_rate` value if both `unet_lr` and `text_encoder_lr` are defined.
 train_unet = True
-unet_lr = 1e-4
+unet_lr = 2e-4
 train_text_encoder = True
-text_encoder_lr = 5e-5
+text_encoder_lr = 2e-4
 max_grad_norm = 1.0  # default = 1.0; 0 for no clipping
 lr_scheduler = "constant"  # ["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"]
 lr_warmup_steps = 0
@@ -297,7 +297,7 @@ config = {
         "network_train_unet_only": True if train_unet and not train_text_encoder else False,
         "network_train_text_encoder_only": True if train_text_encoder and not train_unet else False,
         "training_comment": None,
-        "scale_weight_norms": scale_weight_norms if not scale_weight_norms == -1 else None,
+        "scale_weight_norms": scale_weight_norms if scale_weight_norms > 0 else None,
     },
     "optimizer_arguments": {
         "optimizer_type": optimizer_type,
