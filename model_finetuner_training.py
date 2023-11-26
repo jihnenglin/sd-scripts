@@ -319,10 +319,11 @@ config_file = os.path.join(root_dir, "fine_tune/config/config_file.toml")
 dataset_config = os.path.join(root_dir, "fine_tune/config/dataset_config.toml")
 
 accelerate_config = os.path.join(repo_dir, "accelerate_config/config.yaml")
+num_cpu_threads_per_process = 8
 
 accelerate_conf = {
     "config_file" : accelerate_config,
-    "num_cpu_threads_per_process" : 1,
+    "num_cpu_threads_per_process" : num_cpu_threads_per_process,
 }
 
 train_conf = {
