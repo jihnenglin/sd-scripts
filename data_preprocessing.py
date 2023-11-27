@@ -154,8 +154,8 @@ if not recursive:
     config = {
         "_train_data_dir": train_data_dir,
         "_out_json": metadata,
-        "recursive": recursive,
         "full_path": recursive,
+        "recursive": recursive,
         "clean_caption": clean_caption
     }
 
@@ -173,8 +173,8 @@ else:
         config = {
             "_train_data_dir": train_data_dir,
             "_out_json": metadata,
-            "recursive": False,
             "full_path": recursive,
+            "recursive": False,
             "clean_caption": clean_caption
         }
 
@@ -188,8 +188,8 @@ else:
         config = {
             "_train_data_dir": subfolder,
             "_out_json": f"{metadata[:-5]}_{folder_name}.json",
-            "recursive": recursive,
             "full_path": recursive,
+            "recursive": recursive,
             "clean_caption": clean_caption
         }
 
@@ -203,20 +203,20 @@ input("Press the Enter key to continue: ")
 
 ## Bucketing and Latents Caching
 # This code will create buckets based on the `max_resolution` provided for multi-aspect ratio training, and then convert all images within the `train_data_dir` to latents.
-v2 = False
-model_dir = os.path.join(root_dir, "pretrained_model/AnyLoRA_noVae_fp16.safetensors")
 # If `recursive`, additionally make JSON files for every top-level folder (`dataset.subset`) in `train_data_dir`.
 # If `recursive`, the additional JSON file names would be `{default_json_file_name[:-5]}_{folder_name}.json`
 input_json = os.path.join(json_dir, "meta_clean.json")
 output_json = os.path.join(json_dir, "meta_lat.json")
+model_dir = os.path.join(root_dir, "pretrained_model/AnyLoRA_noVae_fp16.safetensors")
+v2 = False
 batch_size = 32
 max_data_loader_n_workers = 32
 max_resolution = "768,768"  # ["512,512", "640,640", "768,768"]
 mixed_precision = "no"  # ["no", "fp16", "bf16"]
 flip_aug = True
+skip_existing = True
 # Use the `recursive` option to process subfolders as well
 recursive = True
-skip_existing = True
 
 if not recursive:
     config = {
@@ -224,17 +224,17 @@ if not recursive:
         "_in_json": input_json,
         "_out_json": output_json,
         "_model_name_or_path": model_dir,
-        "recursive": recursive,
-        "full_path": recursive,
         "v2": v2,
-        "flip_aug": flip_aug,
-        "min_bucket_reso": 320 if max_resolution != "512,512" else 256,
-        "max_bucket_reso": 1280 if max_resolution != "512,512" else 1024,
         "batch_size": batch_size,
         "max_data_loader_n_workers": max_data_loader_n_workers,
         "max_resolution": max_resolution,
+        "min_bucket_reso": 320 if max_resolution != "512,512" else 256,
+        "max_bucket_reso": 1280 if max_resolution != "512,512" else 1024,
         "mixed_precision": mixed_precision,
+        "full_path": recursive,
+        "flip_aug": flip_aug,
         "skip_existing": skip_existing,
+        "recursive": recursive,
     }
 
     args = make_args(config)
@@ -253,17 +253,17 @@ else:
             "_in_json": input_json,
             "_out_json": output_json,
             "_model_name_or_path": model_dir,
-            "recursive": False,
-            "full_path": recursive,
             "v2": v2,
-            "flip_aug": flip_aug,
-            "min_bucket_reso": 320 if max_resolution != "512,512" else 256,
-            "max_bucket_reso": 1280 if max_resolution != "512,512" else 1024,
             "batch_size": batch_size,
             "max_data_loader_n_workers": max_data_loader_n_workers,
             "max_resolution": max_resolution,
+            "min_bucket_reso": 320 if max_resolution != "512,512" else 256,
+            "max_bucket_reso": 1280 if max_resolution != "512,512" else 1024,
             "mixed_precision": mixed_precision,
+            "full_path": recursive,
+            "flip_aug": flip_aug,
             "skip_existing": skip_existing,
+            "recursive": False,
         }
 
         args = make_args(config)
@@ -278,17 +278,17 @@ else:
             "_in_json": f"{input_json[:-5]}_{folder_name}.json",
             "_out_json": f"{output_json[:-5]}_{folder_name}.json",
             "_model_name_or_path": model_dir,
-            "recursive": recursive,
-            "full_path": recursive,
             "v2": v2,
-            "flip_aug": flip_aug,
-            "min_bucket_reso": 320 if max_resolution != "512,512" else 256,
-            "max_bucket_reso": 1280 if max_resolution != "512,512" else 1024,
             "batch_size": batch_size,
             "max_data_loader_n_workers": max_data_loader_n_workers,
             "max_resolution": max_resolution,
+            "min_bucket_reso": 320 if max_resolution != "512,512" else 256,
+            "max_bucket_reso": 1280 if max_resolution != "512,512" else 1024,
             "mixed_precision": mixed_precision,
+            "full_path": recursive,
+            "flip_aug": flip_aug,
             "skip_existing": skip_existing,
+            "recursive": recursive,
         }
 
         args = make_args(config)

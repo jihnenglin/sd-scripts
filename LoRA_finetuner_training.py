@@ -48,10 +48,10 @@ dataset_repeats = 1
 # If `recursive`, the additional JSON file names would be `{default_json_file_name[:-5]}_{folder_name}.json`
 in_json = os.path.join(json_dir, "meta_lat.json")
 resolution = 768  # [512, 640, 768, 896, 1024]
-flip_aug = True
-color_aug = False
 # keep heading N tokens when shuffling caption tokens (token means comma separated strings)
 keep_tokens = 0
+color_aug = False
+flip_aug = True
 
 def get_supported_images(folder):
     supported_extensions = (".png", ".jpg", ".jpeg", ".webp", ".bmp")
@@ -79,23 +79,23 @@ subsets = []
 
 config = {
     "general": {
+        "resolution": resolution,
         "enable_bucket": True,
-        "shuffle_caption": True,
-        "keep_tokens": keep_tokens,
+        "min_bucket_reso": 320 if resolution > 640 else 256,
+        "max_bucket_reso": 1280 if resolution > 640 else 1024,
         "bucket_reso_steps": 64,
         "bucket_no_upscale": False,
     },
     "datasets": [
         {
-            "resolution": resolution,
-            "min_bucket_reso": 320 if resolution > 640 else 256,
-            "max_bucket_reso": 1280 if resolution > 640 else 1024,
-            "caption_dropout_rate": 0,
-            "caption_tag_dropout_rate": 0,
-            "caption_dropout_every_n_epochs": 0,
-            "flip_aug": flip_aug,
+            "shuffle_caption": True,
+            "keep_tokens": keep_tokens,
             "color_aug": color_aug,
+            "flip_aug": flip_aug,
             "face_crop_aug_range": None,
+            "caption_dropout_rate": 0,
+            "caption_dropout_every_n_epochs": 0,
+            "caption_tag_dropout_rate": 0,
             "subsets": subsets,
         }
     ],
@@ -104,16 +104,16 @@ config = {
 if train_supported_images:
     subsets.append({
         "image_dir": train_data_dir,
-        "metadata_file": in_json,
         "num_repeats": dataset_repeats,
+        "metadata_file": in_json,
     })
 
 for subfolder in train_subfolders:
     folder_name, num_repeats = get_folder_name_and_num_repeats(subfolder)
     subsets.append({
         "image_dir": subfolder,
-        "metadata_file": f"{in_json[:-5]}_{folder_name}.json",
         "num_repeats": num_repeats,
+        "metadata_file": f"{in_json[:-5]}_{folder_name}.json",
     })
 
 config_dir = os.path.join(root_dir, "LoRA/config")
@@ -252,7 +252,7 @@ max_train_n_type_value = 10
 max_data_loader_n_workers = 32
 seed = -1  # -1 for random seed
 gradient_checkpointing = False
-gradient_accumulation_steps = 2
+gradient_accumulation_steps = 4
 mixed_precision = "fp16"  # ["no","fp16","bf16"]
 clip_skip = 2
 logging_dir = os.path.join(root_dir, "LoRA/logs")
