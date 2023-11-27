@@ -160,7 +160,7 @@ conv_alpha = 8
 # About dropout and scale_weight_norms, see here (https://github.com/kohya-ss/sd-scripts/pull/545?ref=blog.hinablue.me)
 # Don't use `resume` if you use `network_dropout`; use `network_weight` instead
 network_dropout = 0
-scale_weight_norms = 0  # 0 to disable
+scale_weight_norms = -1  # -1 to disable
 # You can specify this field for resume training.
 network_weight = ""
 #network_weight = os.path.join(output_dir, "last.safetensors")
@@ -184,8 +184,8 @@ max_grad_norm = 1.0  # default = 1.0; 0 for no clipping
 lr_scheduler = "constant"  # ["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"]
 lr_warmup_steps = 0
 # You can define `num_cycles` value for `cosine_with_restarts` or `power` value for `polynomial` in the field below.
-lr_scheduler_num_cycles = 0
-lr_scheduler_power = 0
+lr_scheduler_num_cycles = 1
+lr_scheduler_power = 1
 
 if network_category == "LoHa":
   network_args.append("algo=loha")
@@ -242,7 +242,7 @@ input("Press the Enter key to continue: ")
 ## Training Config
 save_precision = "fp16"  # [None, "float", "fp16", "bf16"] (None for not changing)
 save_n_type = "save_every_n_epochs"  # ["save_every_n_epochs", "save_every_n_steps", "save_n_epoch_ratio"]
-save_n_type_value = 5
+save_n_type_value = 2
 save_state = True
 train_batch_size = 8
 max_token_length = 225
@@ -297,7 +297,7 @@ config = {
         "network_train_unet_only": True if train_unet and not train_text_encoder else False,
         "network_train_text_encoder_only": True if train_text_encoder and not train_unet else False,
         "training_comment": None,
-        "scale_weight_norms": scale_weight_norms if scale_weight_norms > 0 else None,
+        "scale_weight_norms": scale_weight_norms if not scale_weight_norms == -1 else None,
     },
     "optimizer_arguments": {
         "optimizer_type": optimizer_type,

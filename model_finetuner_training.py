@@ -149,8 +149,8 @@ optimizer_args = ["weight_decay=0.1"]
 lr_scheduler = "constant"  # ["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"]
 lr_warmup_steps = 0
 # You can define `num_cycles` value for `cosine_with_restarts` or `power` value for `polynomial` in the field below.
-lr_scheduler_num_cycles = 0
-lr_scheduler_power = 0
+lr_scheduler_num_cycles = 1
+lr_scheduler_power = 1
 train_text_encoder = False
 learning_rate_te = 2e-6
 
@@ -175,7 +175,7 @@ input("Press the Enter key to continue: ")
 ## Training Config
 save_precision = "fp16"  # [None, "float", "fp16", "bf16"] (None for not changing)
 save_n_type = "save_every_n_epochs"  # ["save_every_n_epochs", "save_every_n_steps", "save_n_epoch_ratio"]
-save_n_type_value = 5
+save_n_type_value = 2
 save_state = True
 train_batch_size = 8
 max_token_length = 225
