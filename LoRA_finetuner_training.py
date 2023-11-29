@@ -340,7 +340,7 @@ config = {
         "mixed_precision": mixed_precision,
         "clip_skip": clip_skip if not v2 else None,
         "logging_dir": logging_dir,
-        "log_prefix": project_name,
+        "log_prefix": f"{project_name}_",
         "noise_offset": noise_offset if noise_offset > 0 else None,
         "multires_noise_iterations": multires_noise_iterations if multires_noise_iterations > 0 else None,
         "multires_noise_discount": multires_noise_discount if multires_noise_discount > 0 else None,
