@@ -67,14 +67,14 @@ def install(url):
 
     if "drive.google.com" in url:
         os.chdir(pretrained_model)
-        subprocess.run(f"gdown --fuzzy {url}")
+        subprocess.run(f"gdown --fuzzy {url}", shell=True)
     elif "huggingface.co" in url:
         if "/blob/" in url:
             url = url.replace("/blob/", "/resolve/")
         user_header = f'"Authorization: Bearer {hf_token}"'
-        subprocess.run(f'aria2c --console-log-level=error --summary-interval=10 --header={user_header} -c -x 16 -k 1M -s 16 -d {pretrained_model} -o {base_name} "{url}"')
+        subprocess.run(f'aria2c --console-log-level=error --summary-interval=10 --header={user_header} -c -x 16 -k 1M -s 16 -d {pretrained_model} -o {base_name} "{url}"', shell=True)
     else:
-        subprocess.run(f'aria2c --console-log-level=error --summary-interval=10 -c -x 16 -k 1M -s 16 -d {pretrained_model} "{url}"')
+        subprocess.run(f'aria2c --console-log-level=error --summary-interval=10 -c -x 16 -k 1M -s 16 -d {pretrained_model} "{url}"', shell=True)
 
 if modelUrls:
     urls = modelUrls.split(",")
@@ -108,7 +108,7 @@ if vae_name in vaes:
 
 def install(vae_name, url):
     user_header = f'"Authorization: Bearer {hf_token}"'
-    subprocess.run(f'aria2c --console-log-level=error --summary-interval=10 --header={user_header} -c -x 16 -k 1M -s 16 -d {vae_dir} -o {vae_name} "{url}"')
+    subprocess.run(f'aria2c --console-log-level=error --summary-interval=10 --header={user_header} -c -x 16 -k 1M -s 16 -d {vae_dir} -o {vae_name} "{url}"', shell=True)
 
 
 def install_vae():
