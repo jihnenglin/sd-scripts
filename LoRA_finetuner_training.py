@@ -9,7 +9,7 @@ project_name = ""
 if not project_name:
     project_name = "last"
 
-pretrained_model_name_or_path = os.path.join(root_dir, "pretrained_model/AnyLoRA_noVae_fp16.safetensors")
+pretrained_model_name_or_path = os.path.join(root_dir, "pretrained_model/anything-v4.5-pruned-fp32.safetensors")
 vae = ""
 output_dir = os.path.join(root_dir, "LoRA/output")
 # Resume training from saved state

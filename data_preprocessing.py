@@ -207,7 +207,7 @@ input("Press the Enter key to continue: ")
 # If `recursive`, the additional JSON file names would be `{default_json_file_name[:-5]}_{folder_name}.json`
 input_json = os.path.join(json_dir, "meta_clean.json")
 output_json = os.path.join(json_dir, "meta_lat.json")
-model_dir = os.path.join(root_dir, "pretrained_model/AnyLoRA_noVae_fp16.safetensors")
+model_dir = os.path.join(root_dir, "pretrained_model/anything-v4.5-pruned-fp32.safetensors")
 v2 = False
 batch_size = 32
 max_data_loader_n_workers = 32
