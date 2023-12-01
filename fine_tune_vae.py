@@ -189,23 +189,32 @@ def train(args):
         else:
             text_encoder.eval()
 
-    if not cache_latents:
-        vae.requires_grad_(False)
-        vae.eval()
+    if args.train_vae:
+        accelerator.print("enable VAE training")
+        if args.gradient_checkpointing:
+            vae.gradient_checkpointing_enable()
+        training_models.append(vae)
+    else:
         vae.to(accelerator.device, dtype=weight_dtype)
+        vae.requires_grad_(False)  # VAEは学習しない
+        vae.eval()
 
     for m in training_models:
         m.requires_grad_(True)
 
     trainable_params = []
-    if args.learning_rate_te is None or not args.train_text_encoder:
+    if (args.learning_rate_te is None or not args.train_text_encoder) and \
+       (args.learning_rate_vae is None or not args.train_vae):
         for m in training_models:
             trainable_params.extend(m.parameters())
     else:
         trainable_params = [
             {"params": list(unet.parameters()), "lr": args.learning_rate},
-            {"params": list(text_encoder.parameters()), "lr": args.learning_rate_te},
         ]
+        if args.learning_rate_te is not None and args.train_text_encoder:
+            trainable_params.append({"params": list(text_encoder.parameters()), "lr": args.learning_rate_te})
+        if args.learning_vae is not None and args.train_vae:
+            trainable_params.append({"params": list(vae.parameters()), "lr": args.learning_rate_vae})
 
     # 学習に必要なクラスを準備する
     accelerator.print("prepare optimizer, data loader etc.")
@@ -246,9 +255,17 @@ def train(args):
         text_encoder.to(weight_dtype)
 
     # acceleratorがなんかよろしくやってくれるらしい
-    if args.train_text_encoder:
+    if args.train_text_encoder and args.train_vae:
+        unet, text_encoder, vae, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
+            unet, text_encoder, vae, optimizer, train_dataloader, lr_scheduler
+        )
+    elif args.train_text_encoder:
         unet, text_encoder, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
             unet, text_encoder, optimizer, train_dataloader, lr_scheduler
+        )
+    elif args.train_vae:
+        unet, vae, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
+            unet, vae, optimizer, train_dataloader, lr_scheduler
         )
     else:
         unet, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(unet, optimizer, train_dataloader, lr_scheduler)
@@ -403,7 +420,7 @@ def train(args):
                             global_step,
                             accelerator.unwrap_model(text_encoder),
                             accelerator.unwrap_model(unet),
-                            vae,
+                            accelerator.unwrap_model(vae),
                         )
 
             current_loss = loss.detach().item()  # 平均なのでbatch sizeは関係ないはず
@@ -442,7 +459,7 @@ def train(args):
                     global_step,
                     accelerator.unwrap_model(text_encoder),
                     accelerator.unwrap_model(unet),
-                    vae,
+                    accelerator.unwrap_model(vae),
                 )
 
         train_util.sample_images(accelerator, args, epoch + 1, global_step, accelerator.device, vae, tokenizer, text_encoder, unet)
@@ -451,6 +468,7 @@ def train(args):
     if is_main_process:
         unet = accelerator.unwrap_model(unet)
         text_encoder = accelerator.unwrap_model(text_encoder)
+        vae = accelerator.unwrap_model(vae)
 
     accelerator.end_training()
 
