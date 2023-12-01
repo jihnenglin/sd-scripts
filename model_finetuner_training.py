@@ -153,6 +153,8 @@ lr_scheduler_num_cycles = 1
 lr_scheduler_power = 1
 train_text_encoder = False
 learning_rate_te = 2e-6
+train_vae = False
+learning_rate_vae = 2e-6
 
 print(f"Using {optimizer_type} as Optimizer")
 print("Learning rate: ", learning_rate)
@@ -168,6 +170,9 @@ elif lr_scheduler == "polynomial":
 if train_text_encoder:
     print(f"Train Text Encoder")
     print("Text encoder learning rate: ", learning_rate_te)
+if train_vae:
+    print(f"Train VAE")
+    print("VAE learning rate: ", learning_rate_vae)
 
 input("Press the Enter key to continue: ")
 
@@ -228,10 +233,12 @@ config = {
         "lr_scheduler_power": lr_scheduler_power if lr_scheduler == "polynomial" else None,
         "train_text_encoder": train_text_encoder,
         "learning_rate_te": learning_rate_te if train_text_encoder else None,
+        "train_vae": train_vae,
+        "learning_rate_vae": learning_rate_vae if train_vae else None,
     },
     "dataset_arguments": {
         "debug_dataset": False,
-        "cache_latents_to_disk": True if not color_aug else False,
+        "cache_latents_to_disk": True if not color_aug and not train_vae else False,
     },
     "training_arguments": {
         "output_dir": output_dir,
@@ -350,7 +357,7 @@ def make_args(config):
 
 accelerate_args = make_args(accelerate_conf)
 train_args = make_args(train_conf)
-final_args = f"accelerate launch {accelerate_args} fine_tune.py {train_args}"
+final_args = f"accelerate launch {accelerate_args} fine_tune_vae.py {train_args}"
 
 os.chdir(repo_dir)
 subprocess.run(f"{final_args}", shell=True)
