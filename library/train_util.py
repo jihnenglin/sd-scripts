@@ -3887,9 +3887,9 @@ def _load_target_model(args: argparse.Namespace, weight_dtype, device="cpu", une
 
 
 # TODO remove this function in the future
-def transform_if_model_is_DDP(text_encoder, unet, network=None):
+def transform_if_model_is_DDP(text_encoder, unet, vae=None, network=None):
     # Transform text_encoder, unet and network from DistributedDataParallel
-    return (model.module if type(model) == DDP else model for model in [text_encoder, unet, network] if model is not None)
+    return (model.module if type(model) == DDP else model for model in [text_encoder, unet, vae, network] if model is not None)
 
 
 def transform_models_if_DDP(models):
