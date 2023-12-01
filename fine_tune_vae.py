@@ -213,7 +213,7 @@ def train(args):
         ]
         if args.learning_rate_te is not None and args.train_text_encoder:
             trainable_params.append({"params": list(text_encoder.parameters()), "lr": args.learning_rate_te})
-        if args.learning_vae is not None and args.train_vae:
+        if args.learning_rate_vae is not None and args.train_vae:
             trainable_params.append({"params": list(vae.parameters()), "lr": args.learning_rate_vae})
 
     # 学習に必要なクラスを準備する
