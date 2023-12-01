@@ -3920,7 +3920,7 @@ def load_target_model(args, weight_dtype, accelerator, unet_use_linear_projectio
             torch.cuda.empty_cache()
         accelerator.wait_for_everyone()
 
-    text_encoder, unet = transform_if_model_is_DDP(text_encoder, unet)
+    text_encoder, unet, vae = transform_if_model_is_DDP(text_encoder, unet, vae)
 
     return text_encoder, vae, unet, load_stable_diffusion_format
 
