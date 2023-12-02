@@ -10,7 +10,7 @@ scraped_data_dir = os.path.join(root_dir, "scraped_data")
 os.chdir(root_dir)
 # Use `gallery-dl` to scrape images from an imageboard site. To specify `prompt(s)`, separate them with commas (e.g., `hito_komoru, touhou`).
 booru = "Danbooru"  # ["Danbooru", "Gelbooru", "Safebooru"]
-prompt = "hitokomoru"
+prompt = "male_focus"
 
 # Alternatively, you can provide a `custom_url` instead of using a predefined site.
 custom_url = ""
