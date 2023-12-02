@@ -1,7 +1,6 @@
 ## Scrape Dataset
 import os
 import html
-from IPython.utils import capture
 import subprocess
 
 root_dir = "~/sd-train"
@@ -23,7 +22,7 @@ user_agent = "gdl/1.24.5"
 # You can limit the number of images to download by using the `--range` option followed by the desired range (e.g., `1-200`).
 range = "1-200"
 
-write_tags = False
+write_tags = True
 
 additional_arguments = "--filename /O --no-part"
 
@@ -112,8 +111,7 @@ if write_tags:
     subprocess.run(f"gallery-dl {scrape_args} {additional_arguments}", shell=True)
     pre_process_tags(scraped_data_dir)
 else:
-    with capture.capture_output() as cap:
-        subprocess.run(f"gallery-dl {get_url_args} {additional_arguments}", shell=True)
+    cap = subprocess.run(f"gallery-dl {get_url_args} {additional_arguments}", shell=True, capture_output=True, text=True)
     with open(scraper_text, "w") as f:
         f.write(cap.stdout)
 
