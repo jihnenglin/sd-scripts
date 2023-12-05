@@ -35,8 +35,7 @@ class ImageLoadingDataset(torch.utils.data.Dataset):
         except Exception as e:
             print(f"Could not load image path / 画像を読み込めません: {img_path}, error: {e}")
             return None
-
-        return (inputs, img_path)
+        return (torch.squeeze(inputs["pixel_values"], 0), img_path)
 
 image_paths: list[str] = [str(p) for p in train_util.glob_images_pathlib(train_data_dir_path, recursive)]
 print(f"found {len(image_paths)} images.")
@@ -53,23 +52,11 @@ data = torch.utils.data.DataLoader(
     drop_last=False,
 )
 
-for data_entry in data:
-    print(data_entry)
-"""
-    if data_entry[0] is None:
-        continue
+with torch.no_grad():
+    for data_entry in data:
+        inputs, img_path = data_entry
+        inputs = inputs.to(DEVICE)
 
-    img_tensor, image_path = data_entry[0]
-    if img_tensor is not None:
-        image = transforms.functional.to_pil_image(img_tensor)
-    else:
-        try:
-            image = Image.open(image_path)
-            if image.mode != "RGB":
-                image = image.convert("RGB")
-        except Exception as e:
-            print(f"Could not load image path / 画像を読み込めません: {image_path}, error: {e}")
-            continue
-
-    outputs = model(**batch_inputs)
-"""
+        outputs = model(inputs)
+        print(outputs)
+        break
