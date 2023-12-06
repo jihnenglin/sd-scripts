@@ -22,6 +22,7 @@ user_agent = "gdl/1.24.5"
 # You can limit the number of images to download by using the `--range` option followed by the desired range (e.g., `1-200`).
 range = "1-200"
 
+write_metadata = True
 write_tags = True
 
 additional_arguments = "--filename /O --no-part"
@@ -98,6 +99,7 @@ get_url_config = {
 scrape_config = {
     "_valid_url" : valid_url,
     "directory" : image_dir,
+    "write-metadata": write_metadata,
     "write-tags" : write_tags,
     "range" : range if range else None,
     "user-agent" : user_agent
