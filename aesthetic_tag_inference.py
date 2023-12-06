@@ -12,6 +12,7 @@ import json
 import clip
 
 import os
+import time
 from pathlib import Path
 import library.train_util as train_util
 
@@ -36,8 +37,7 @@ class ImageLoadingDataset(torch.utils.data.Dataset):
 
         try:
             image = Image.open(img_path)
-            image = preprocess(image).unsqueeze(0)
-            print(image)
+            image = preprocess(image)
         except Exception as e:
             print(f"Could not load image path / 画像を読み込めません: {img_path}, error: {e}")
             return None
@@ -118,7 +118,7 @@ model.to("cuda")
 model.eval()
 
 
-
+start_time = time.time()
 with torch.no_grad():
     for data_entry in data:
         image, img_path = data_entry
@@ -126,8 +126,13 @@ with torch.no_grad():
         image_features = model2.encode_image(image)
 
         im_emb_arr = normalized(image_features.cpu().detach().numpy() )
-
         prediction = model(torch.from_numpy(im_emb_arr).to(device).type(torch.cuda.FloatTensor))
 
         print( "Aesthetic score predicted by the model:")
         print( prediction )
+        break
+end_time = time.time()
+proc_time = end_time - start_time
+
+# Print the elapsed time in seconds
+print(f"Processing time: {proc_time:.2f} seconds")
