@@ -149,6 +149,6 @@ with torch.no_grad():
             with open(f"{img_paths[i]}.json", "r") as f:
                 metadata = json.load(f)
                 quality_tag = get_tag_name(metadata["score"], quality_thresholds, quality_tag_names)
-                print(scores[i], img_paths[i], f"{quality_tag}, {aesthetic_tag}, year {metadata['created_at'][:4]}, ")
+                print(img_paths[i], metadata["score"], scores[i], f"{quality_tag}, {aesthetic_tag}, year {metadata['created_at'][:4]}, ")
 
         input("Press enter to continue")
