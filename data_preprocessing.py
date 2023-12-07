@@ -19,7 +19,7 @@ random_color = False
 recursive = True
 
 
-batch_size = 64
+batch_size = 8
 supported_types = [
     ".png",
     ".jpg",
@@ -209,7 +209,7 @@ input_json = os.path.join(json_dir, "meta_clean.json")
 output_json = os.path.join(json_dir, "meta_lat.json")
 model_dir = os.path.join(root_dir, "pretrained_model/AnyLoRA_noVae_fp16-pruned.safetensors")
 v2 = False
-batch_size = 32
+batch_size = 8
 max_data_loader_n_workers = 32
 max_resolution = "768,768"  # ["512,512", "640,640", "768,768"]
 mixed_precision = "no"  # ["no", "fp16", "bf16"]

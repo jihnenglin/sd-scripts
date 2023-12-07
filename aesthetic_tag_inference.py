@@ -1,20 +1,16 @@
 from PIL import Image
+from pathlib import Path
+from tqdm import tqdm
 
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0"    # choose GPU if you are on a multi GPU server
 import torch
 import pytorch_lightning as pl
 import torch.nn as nn
-from torchvision import datasets, transforms
-from tqdm import tqdm
-
-import json
-
 import clip
-
 import os
-import time
-from pathlib import Path
+
 import library.train_util as train_util
+
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"    # choose GPU if you are on a multi GPU server
 
 root_dir = "~/sd-train"
 train_data_dir_path = Path(os.path.join(root_dir, "scraped_data"))
@@ -117,7 +113,6 @@ model.load_state_dict(s)
 model.to("cuda")
 model.eval()
 
-start_time = time.time()
 with torch.no_grad():
     for data_entry in tqdm(data, smoothing=0.0):
         image, img_path = data_entry
@@ -126,8 +121,3 @@ with torch.no_grad():
 
         im_emb_arr = normalized(image_features.cpu().detach().numpy() )
         prediction = model(torch.from_numpy(im_emb_arr).to(device).type(torch.cuda.FloatTensor))
-end_time = time.time()
-proc_time = end_time - start_time
-
-# Print the elapsed time in seconds
-print(f"Processing time: {proc_time:.2f} seconds")
