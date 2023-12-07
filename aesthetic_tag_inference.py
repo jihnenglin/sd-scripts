@@ -17,6 +17,9 @@ train_data_dir_path = Path(os.path.join(root_dir, "scraped_data"))
 recursive = False
 batch_size = 8
 max_data_loader_n_workers = 32
+thresholds = [6.675, 6.0, 5.0]
+aesthetic_tags = ["very aesthetic", "aesthetic", "displeasing", "very displeasing"]
+assert len(aesthetic_tags) == len(thresholds) + 1, "The number of `aesthetic_tags` should be equal to the number of `thresholds` plus one"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model2, preprocess = clip.load("ViT-L/14", device=device)  #RN50x64
@@ -121,3 +124,16 @@ with torch.no_grad():
 
         im_emb_arr = normalized(image_features.cpu().detach().numpy() )
         prediction = model(torch.from_numpy(im_emb_arr).to(device).type(torch.cuda.FloatTensor))
+
+        for i in range(batch_size):
+            not_last = False
+            for j in range(len(thresholds)):
+                if prediction[i] >= thresholds[j]:
+                    not_last = True
+                    break
+            if not_last:
+                tag = aesthetic_tags[j]
+            else:
+                tag = aesthetic_tags[-1]
+            print(prediction[i], img_path[i], tag)
+        break
