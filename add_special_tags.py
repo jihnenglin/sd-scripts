@@ -7,6 +7,7 @@ import pytorch_lightning as pl
 import torch.nn as nn
 import clip
 import os
+import json
 
 import library.train_util as train_util
 
@@ -17,9 +18,15 @@ train_data_dir_path = Path(os.path.join(root_dir, "scraped_data"))
 recursive = False
 batch_size = 8
 max_data_loader_n_workers = 32
-thresholds = [6.675, 6.0, 5.0]
-aesthetic_tags = ["best aesthetic", "great aesthetic", "normal aesthetic", "bad aesthetic"]
-assert len(aesthetic_tags) == len(thresholds) + 1, "The number of `aesthetic_tags` should be equal to the number of `thresholds` plus one"
+
+quality_thresholds = [150, 100, 75, 0, -4]
+quality_tag_names = ["best quality", "amazing quality", "great quality", "normal quality", "bad quality", "worst quality"]
+aesthetic_thresholds = [6.675, 6.0, 5.0]
+aesthetic_tag_names = ["best aesthetic", "great aesthetic", "normal aesthetic", "bad aesthetic"]
+assert len(quality_tag_names) == len(quality_thresholds) + 1, \
+       "The number of `quality_tag_names` should be equal to the number of `quality_thresholds` plus one"
+assert len(aesthetic_tag_names) == len(aesthetic_thresholds) + 1, \
+       "The number of `aesthetic_tag_names` should be equal to the number of `aesthetic_thresholds` plus one"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model2, preprocess = clip.load("ViT-L/14", device=device)  #RN50x64
@@ -106,6 +113,17 @@ def normalized(a, axis=-1, order=2):
     l2[l2 == 0] = 1
     return a / np.expand_dims(l2, axis)
 
+def get_tag_name(score, thresholds, tag_names):
+    not_last = False
+    for j in range(len(thresholds)):
+        if score >= thresholds[j]:
+            not_last = True
+            break
+    if not_last:
+        tag = tag_names[j]
+    else:
+        tag = tag_names[-1]
+    return tag
 
 model = MLP(768)  # CLIP embedding dim is 768 for CLIP ViT L 14
 
@@ -118,22 +136,19 @@ model.eval()
 
 with torch.no_grad():
     for data_entry in tqdm(data, smoothing=0.0):
-        image, img_path = data_entry
-        image = image.to(device)
-        image_features = model2.encode_image(image)
+        images, img_paths = data_entry
+        images = images.to(device)
+        image_features = model2.encode_image(images)
 
         im_emb_arr = normalized(image_features.cpu().detach().numpy() )
-        prediction = model(torch.from_numpy(im_emb_arr).to(device).type(torch.cuda.FloatTensor))
+        scores = model(torch.from_numpy(im_emb_arr).to(device).type(torch.cuda.FloatTensor))
 
         for i in range(batch_size):
-            not_last = False
-            for j in range(len(thresholds)):
-                if prediction[i] >= thresholds[j]:
-                    not_last = True
-                    break
-            if not_last:
-                tag = aesthetic_tags[j]
-            else:
-                tag = aesthetic_tags[-1]
-            print(prediction[i], img_path[i], tag)
+            aesthetic_tag = get_tag_name(scores[i], aesthetic_thresholds, aesthetic_tag_names)
+
+            with open(f"{img_paths[i]}.json", "r") as f:
+                metadata = json.load(f)
+                quality_tag = get_tag_name(metadata["score"], quality_thresholds, quality_tag_names)
+                print(scores[i], img_paths[i], f"{quality_tag}, {aesthetic_tag}, year {metadata['created_at'][:4]}, ")
+
         input("Press enter to continue")
