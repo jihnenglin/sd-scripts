@@ -18,7 +18,7 @@ recursive = False
 batch_size = 8
 max_data_loader_n_workers = 32
 thresholds = [6.675, 6.0, 5.0]
-aesthetic_tags = ["very aesthetic", "aesthetic", "displeasing", "very displeasing"]
+aesthetic_tags = ["best aesthetic", "great aesthetic", "normal aesthetic", "bad aesthetic"]
 assert len(aesthetic_tags) == len(thresholds) + 1, "The number of `aesthetic_tags` should be equal to the number of `thresholds` plus one"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -136,4 +136,4 @@ with torch.no_grad():
             else:
                 tag = aesthetic_tags[-1]
             print(prediction[i], img_path[i], tag)
-        break
+        input("Press enter to continue")
