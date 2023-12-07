@@ -5,7 +5,7 @@ import torch
 import pytorch_lightning as pl
 import torch.nn as nn
 from torchvision import datasets, transforms
-import tqdm
+from tqdm import tqdm
 
 import json
 
@@ -19,7 +19,7 @@ import library.train_util as train_util
 root_dir = "~/sd-train"
 train_data_dir_path = Path(os.path.join(root_dir, "scraped_data"))
 recursive = False
-batch_size = 32
+batch_size = 8
 max_data_loader_n_workers = 32
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -117,20 +117,15 @@ model.load_state_dict(s)
 model.to("cuda")
 model.eval()
 
-
 start_time = time.time()
 with torch.no_grad():
-    for data_entry in data:
+    for data_entry in tqdm(data, smoothing=0.0):
         image, img_path = data_entry
         image = image.to(device)
         image_features = model2.encode_image(image)
 
         im_emb_arr = normalized(image_features.cpu().detach().numpy() )
         prediction = model(torch.from_numpy(im_emb_arr).to(device).type(torch.cuda.FloatTensor))
-
-        print( "Aesthetic score predicted by the model:")
-        print( prediction )
-        break
 end_time = time.time()
 proc_time = end_time - start_time
 
