@@ -1,4 +1,6 @@
 from PIL import Image
+Image.MAX_IMAGE_PIXELS = None
+
 from pathlib import Path
 from tqdm import tqdm
 
@@ -18,6 +20,7 @@ train_data_dir_path = Path(os.path.join(root_dir, "scraped_data"))
 recursive = False
 batch_size = 8
 max_data_loader_n_workers = 32
+skip_existing = True
 
 quality_thresholds = [150, 100, 75, 0, -4]
 quality_tag_names = ["best quality", "amazing quality", "great quality", "normal quality", "bad quality", "worst quality"]
@@ -149,6 +152,27 @@ with torch.no_grad():
             with open(f"{img_paths[i]}.json", "r") as f:
                 metadata = json.load(f)
                 quality_tag = get_tag_name(metadata["score"], quality_thresholds, quality_tag_names)
-                print(img_paths[i], metadata["score"], scores[i], f"{quality_tag}, {aesthetic_tag}, year {metadata['created_at'][:4]}, ")
+                year_tag = f"year {metadata['created_at'][:4]}"
 
-        input("Press enter to continue")
+            #print(img_paths[i], metadata["score"], scores[i], f"{quality_tag}, {aesthetic_tag}, {year_tag}, ")
+
+            directory, filename = os.path.split(img_paths[i])
+            filename_no_extension, extension = os.path.splitext(filename)
+            tag_filename = filename_no_extension + ".txt"
+            tag_path = os.path.join(directory, tag_filename)
+
+            with open(tag_path, "r+") as f:
+                tags = f.read().split(", ")
+                if tags[-3] in aesthetic_tag_names:
+                    if skip_existing:
+                        continue
+                    tags[-4] = quality_tag
+                    tags[-3] = aesthetic_tag
+                    tags[-2] = year_tag
+                    f.seek(0)
+                    f.truncate()
+                    f.write(", ".join(tags))
+                else:
+                    f.write(f"{quality_tag}, {aesthetic_tag}, {year_tag}, ")
+
+        #input("Press enter to continue")
