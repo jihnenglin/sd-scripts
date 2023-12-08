@@ -6,16 +6,20 @@ from tqdm import tqdm
 from PIL import Image
 
 root_dir = "~/sd-train"
+repo_dir = os.path.join(root_dir, "sd-scripts")
+finetune_dir = os.path.join(repo_dir, "finetune")
 train_data_dir = os.path.join(root_dir, "train_data")
+json_dir = os.path.join(root_dir, "json")
+model_path = os.path.join(root_dir, "pretrained_model/sd_xl_base_1.0.safetensors")
 
 os.chdir(root_dir)
 
 # This section removes unsupported media types such as `.mp4`, `.webm`, and `.gif`, as well as any unnecessary files.
 # To convert a transparent dataset with an alpha channel (RGBA) to RGB and give it a white background, set the `convert` parameter to `True`.
-convert = False
+convert = True
 # Alternatively, you can give the background a `random_color` instead of white by checking the corresponding option.
 random_color = False
-recursive = False
+recursive = True
 
 batch_size = 64
 supported_types = [
@@ -111,15 +115,12 @@ input("Press the Enter key to continue: ")
 import time
 import subprocess
 
-repo_dir = os.path.join(root_dir, "sd-scripts")
-finetune_dir = os.path.join(repo_dir, "finetune")
-json_dir = os.path.join(root_dir, "json")
-model_path = os.path.join(root_dir, "pretrained_model/sd_xl_base_1.0.safetensors")
-
 # This code will create buckets based on the `bucket_resolution` provided for multi-aspect ratio training, and then convert all images within the `train_data_dir` to latents.
+# If `recursive`, additionally make JSON files for every top-level folder (`dataset.subset`) in `train_data_dir`.
+# If `recursive`, the additional JSON file names would be `{default_json_file_name[:-5]}_{folder_name}.json`
 bucketing_json            = os.path.join(json_dir, "meta_lat.json")
 metadata_json             = os.path.join(json_dir, "meta_clean.json")
-batch_size                = 4
+batch_size                = 16
 max_data_loader_n_workers = 32
 bucket_resolution         = 1024  # [512, 640, 768, 896, 1024]
 mixed_precision           = "no"  # ["no", "fp16", "bf16"]
@@ -170,13 +171,61 @@ def generate_args(config):
             args += f"--{k}={v} "
     return args.strip()
 
-merge_metadata_args = generate_args(metadata_config)
-prepare_buckets_args = generate_args(bucketing_config)
+def get_supported_images(folder):
+    supported_extensions = (".png", ".jpg", ".jpeg", ".webp", ".bmp")
+    return [file for ext in supported_extensions for file in glob.glob(f"{folder}/*{ext}")]
 
-merge_metadata_command = f"python merge_all_to_metadata.py {merge_metadata_args}"
-prepare_buckets_command = f"python prepare_buckets_latents.py {prepare_buckets_args}"
+def get_subfolders_with_supported_images(folder):
+    subfolders = [os.path.join(folder, subfolder) for subfolder in os.listdir(folder) if os.path.isdir(os.path.join(folder, subfolder))]
+    return [subfolder for subfolder in subfolders if len(get_supported_images(subfolder)) > 0]
 
 os.chdir(finetune_dir)
-subprocess.run(f"{merge_metadata_command}", shell=True)
-time.sleep(1)
-subprocess.run(f"{prepare_buckets_command}", shell=True)
+
+if not recursive:
+    merge_metadata_args = generate_args(metadata_config)
+    prepare_buckets_args = generate_args(bucketing_config)
+
+    merge_metadata_command = f"python merge_all_to_metadata.py {merge_metadata_args}"
+    prepare_buckets_command = f"python prepare_buckets_latents.py {prepare_buckets_args}"
+
+    subprocess.run(f"{merge_metadata_command}", shell=True)
+    time.sleep(1)
+    subprocess.run(f"{prepare_buckets_command}", shell=True)
+
+else:
+    train_supported_images = get_supported_images(train_data_dir)
+    train_subfolders = get_subfolders_with_supported_images(train_data_dir)
+
+    if train_supported_images:
+        folder_name = os.path.basename(train_data_dir)
+        metadata_config["recursive"] = False
+        bucketing_config["recursive"] = False
+
+        merge_metadata_args = generate_args(metadata_config)
+        prepare_buckets_args = generate_args(bucketing_config)
+
+        merge_metadata_command = f"python merge_all_to_metadata.py {merge_metadata_args}"
+        prepare_buckets_command = f"python prepare_buckets_latents.py {prepare_buckets_args}"
+
+        subprocess.run(f"{merge_metadata_command}", shell=True)
+        time.sleep(1)
+        subprocess.run(f"{prepare_buckets_command}", shell=True)
+
+        metadata_config["recursive"] = True
+        bucketing_config["recursive"] = True
+
+    for subfolder in train_subfolders:
+        folder_name = os.path.basename(subfolder)
+        metadata_config["_out_json"] = f"{metadata_json[:-5]}_{folder_name}.json"
+        bucketing_config["_in_json"] = f"{metadata_json[:-5]}_{folder_name}.json"
+        bucketing_config["_out_json"] = f"{bucketing_json[:-5]}_{folder_name}.json"
+
+        merge_metadata_args = generate_args(metadata_config)
+        prepare_buckets_args = generate_args(bucketing_config)
+
+        merge_metadata_command = f"python merge_all_to_metadata.py {merge_metadata_args}"
+        prepare_buckets_command = f"python prepare_buckets_latents.py {prepare_buckets_args}"
+
+        subprocess.run(f"{merge_metadata_command}", shell=True)
+        time.sleep(1)
+        subprocess.run(f"{prepare_buckets_command}", shell=True)
