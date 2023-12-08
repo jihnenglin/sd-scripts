@@ -330,9 +330,13 @@ def train(args):
                 with torch.no_grad():
                     if "latents" in batch and batch["latents"] is not None:
                         latents = batch["latents"].to(accelerator.device)  # .to(dtype=weight_dtype)
-                    else:
+                    elif not args.train_vae:
                         # latentに変換
-                        latents = vae.encode(batch["images"]).latent_dist.sample()
+                        images = batch["images"].to(dtype=weight_dtype)
+                        latents = vae.encode(images).latent_dist.sample()
+                    else:
+                        images = batch["images"].to(device=accelerator.device)
+                        latents = vae.encode(images).latent_dist.sample()
                     latents = latents * 0.18215
                 b_size = latents.shape[0]
 
