@@ -18,7 +18,12 @@ optimizer_args = "[ \"scale_parameter=False\", \"relative_step=False\", \"warmup
 ### Learning Rate Config
 # Different `optimizer_type` and `network_category` for some condition requires different learning rate. It's recommended to set `text_encoder_lr = 1/2 * unet_lr`
 learning_rate = 4e-7
+max_grad_norm = 0.0  # default = 1.0; 0.0 for no clipping. It is recommended to be set to 0.0 when using AdaFactor with fixed learning rate
 train_text_encoder = False
+# ViT-L
+learning_rate_te1 = 2e-7
+# BiG-G
+learning_rate_te2 = 2e-7
 ### LR Scheduler Config
 # `lr_scheduler` provides several methods to adjust the learning rate based on the number of epochs.
 lr_scheduler = "constant_with_warmup"  # ["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"]
@@ -47,7 +52,9 @@ optimizer_config = {
         "optimizer_type"          : optimizer_type,
         "learning_rate"           : learning_rate,
         "train_text_encoder"      : train_text_encoder,
-        "max_grad_norm"           : 0,
+        "learning_rate_te1"       : learning_rate_te1,
+        "learning_rate_te2"       : learning_rate_te2,
+        "max_grad_norm"           : max_grad_norm,
         "optimizer_args"          : optimizer_args,
         "lr_scheduler"            : lr_scheduler,
         "lr_warmup_steps"         : lr_warmup_steps,
@@ -127,10 +134,10 @@ keep_tokens             = 0
 ### General Config
 max_train_steps         = 2500
 train_batch_size        = 4
-mixed_precision         = "fp16"  # ["no","fp16","bf16"]
+mixed_precision         = "bf16"  # ["no","fp16","bf16"]
 seed                    = -1
 ### Save Output Config
-save_precision          = "fp16"  # ["float", "fp16", "bf16"]
+save_precision          = "bf16"  # ["float", "fp16", "bf16"]
 save_every_n_steps      = 1000
 save_optimizer_state    = False
 save_model_as           = "safetensors" # ["ckpt", "safetensors", "diffusers", "diffusers_safetensors"]
@@ -163,11 +170,11 @@ prompt_config = {
 train_config = {
     "sdxl_arguments": {
         "cache_text_encoder_outputs" : cache_text_encoder_outputs,
-        # "enable_bucket"              : True,
+        "enable_bucket"              : True,
         "no_half_vae"                : no_half_vae,
-        # "cache_latents"              : True,
-        # "cache_latents_to_disk"      : True,
-        # "vae_batch_size"             : 4,
+        "cache_latents"              : True,
+        "cache_latents_to_disk"      : True,
+        "vae_batch_size"             : 4,
         "min_timestep"               : min_timestep,
         "max_timestep"               : max_timestep,
         "shuffle_caption"            : True if not cache_text_encoder_outputs else False,
