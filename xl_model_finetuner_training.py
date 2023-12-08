@@ -1,15 +1,112 @@
-## Optimizer Config
+## Dataset Config
+import os
 import toml
-import ast
+import glob
 
 root_dir = "~/sd-train"
 repo_dir = os.path.join(root_dir, "sd-scripts")
 train_data_dir = os.path.join(root_dir, "train_data")
+json_dir = os.path.join(root_dir, "json")
 config_dir = os.path.join(root_dir, "fine_tune/config")
 output_dir = os.path.join(root_dir, "fine_tune/output")
-accelerate_config = os.path.join(repo_dir, "accelerate_config/config.yaml")
 model_path = os.path.join(root_dir, "pretrained_model/sd_xl_base_1.0.safetensors")
-vae_path = os.path.join(root_dir, "vae/sdxl_vae.safetensors")
+vae_path = None
+
+
+# This configuration is designed for `one concept` training. Refer to this [guide](https://rentry.org/kohyaminiguide#b-multi-concept-training) for multi-concept training.
+dataset_repeats = 1
+# If `recursive`, additionally make JSON files for every top-level folder (`dataset.subset`) in `train_data_dir`.
+# If `recursive`, the additional JSON file names would be `{default_json_file_name[:-5]}_{folder_name}.json`
+in_json = os.path.join(json_dir, "meta_lat.json")
+resolution = 1024  # [512, 640, 768, 896, 1024]
+# keep heading N tokens when shuffling caption tokens (token means comma separated strings)
+keep_tokens = 0
+color_aug = False
+flip_aug = False
+
+def get_supported_images(folder):
+    supported_extensions = (".png", ".jpg", ".jpeg", ".webp", ".bmp")
+    return [file for ext in supported_extensions for file in glob.glob(f"{folder}/*{ext}")]
+
+def get_subfolders_with_supported_images(folder):
+    subfolders = [os.path.join(folder, subfolder) for subfolder in os.listdir(folder) if os.path.isdir(os.path.join(folder, subfolder))]
+    return [subfolder for subfolder in subfolders if len(get_supported_images(subfolder)) > 0]
+
+def get_folder_name_and_num_repeats(folder):
+    folder_name = os.path.basename(folder)
+    try:
+        repeats, _ = folder_name.split('_', 1)
+        num_repeats = int(repeats)
+    except ValueError:
+        num_repeats = 1
+
+    return folder_name, num_repeats
+
+train_supported_images = get_supported_images(train_data_dir)
+train_subfolders = get_subfolders_with_supported_images(train_data_dir)
+
+subsets = []
+
+dataset_config = {
+    "general": {
+        "resolution": resolution,
+        "enable_bucket": True,
+        "min_bucket_reso": 512,
+        "max_bucket_reso": 2048,
+        "bucket_reso_steps": 64,
+        "bucket_no_upscale": False,
+    },
+    "datasets": [
+        {
+            "keep_tokens": keep_tokens,
+            "color_aug": color_aug,
+            "flip_aug": flip_aug,
+            "face_crop_aug_range": None,
+            "caption_dropout_rate": 0,
+            "caption_dropout_every_n_epochs": 0,
+            "caption_tag_dropout_rate": 0,
+            "subsets": subsets,
+        }
+    ],
+}
+
+if train_supported_images:
+    subsets.append({
+        "image_dir": train_data_dir,
+        "num_repeats": dataset_repeats,
+        "metadata_file": in_json,
+    })
+
+for subfolder in train_subfolders:
+    folder_name, num_repeats = get_folder_name_and_num_repeats(subfolder)
+    subsets.append({
+        "image_dir": subfolder,
+        "num_repeats": num_repeats,
+        "metadata_file": f"{in_json[:-5]}_{folder_name}.json",
+    })
+
+dataset_config_file = os.path.join(config_dir, "dataset_config.toml")
+
+for key in dataset_config:
+    if isinstance(dataset_config[key], dict):
+        for sub_key in dataset_config[key]:
+            if dataset_config[key][sub_key] == "":
+                dataset_config[key][sub_key] = None
+    elif dataset_config[key] == "":
+        dataset_config[key] = None
+
+config_str = toml.dumps(dataset_config)
+
+with open(dataset_config_file, "w") as f:
+    f.write(config_str)
+
+print(config_str)
+
+input("Press the Enter key to continue: ")
+
+
+## Optimizer Config
+import ast
 
 # Use `Adafactor` optimizer. `RMSprop 8bit` or `Adagrad 8bit` may work. `AdamW 8bit` doesn't seem to work.
 optimizer_type = "AdaFactor"  # ["AdamW", "AdamW8bit", "Lion8bit", "Lion", "SGDNesterov", "SGDNesterov8bit", "DAdaptation(DAdaptAdamPreprint)", "DAdaptAdaGrad", "DAdaptAdam", "DAdaptAdan", "DAdaptAdanIP", "DAdaptLion", "DAdaptSGD", "AdaFactor"]
@@ -17,13 +114,13 @@ optimizer_type = "AdaFactor"  # ["AdamW", "AdamW8bit", "Lion8bit", "Lion", "SGDN
 optimizer_args = "[ \"scale_parameter=False\", \"relative_step=False\", \"warmup_init=False\" ]"
 ### Learning Rate Config
 # Different `optimizer_type` and `network_category` for some condition requires different learning rate. It's recommended to set `text_encoder_lr = 1/2 * unet_lr`
-learning_rate = 4e-7
+learning_rate = 2e-6
 max_grad_norm = 0.0  # default = 1.0; 0.0 for no clipping. It is recommended to be set to 0.0 when using AdaFactor with fixed learning rate
 train_text_encoder = False
 # ViT-L
-learning_rate_te1 = 2e-7
+learning_rate_te1 = 2e-6
 # BiG-G
-learning_rate_te2 = 2e-7
+learning_rate_te2 = 2e-6
 ### LR Scheduler Config
 # `lr_scheduler` provides several methods to adjust the learning rate based on the number of epochs.
 lr_scheduler = "constant_with_warmup"  # ["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"]
@@ -107,9 +204,7 @@ input("Press the Enter key to continue: ")
 
 
 ## Training Config
-import os
 import random
-import glob
 
 json_dir = os.path.join(root_dir, "json")
 
@@ -126,21 +221,21 @@ cache_text_encoder_outputs = True
 # These options can be used to train U-Net with different timesteps. The default values are 0 and 1000.
 min_timestep = 0
 max_timestep = 1000
-### Dataset Config
-num_repeats             = 1
-# Please refer to `Custom Caption/Tag (Optional)` if you want to append `activation_word` to captions/tags
-resolution              = 1024  # [512, 640, 768, 896, 1024]
-keep_tokens             = 0
+resolution                  = 1024  # [512, 640, 768, 896, 1024]
 ### General Config
-max_train_steps         = 2500
-train_batch_size        = 4
-mixed_precision         = "bf16"  # ["no","fp16","bf16"]
-seed                    = -1
+max_train_n_type            = "max_train_epochs"  # ["max_train_steps", "max_train_epochs"]
+max_train_n_type_value      = 10
+train_batch_size            = 4
+max_data_loader_n_workers   = 32
+gradient_accumulation_steps = 8
+mixed_precision             = "bf16"  # ["no","fp16","bf16"]
+seed                        = -1
 ### Save Output Config
-save_precision          = "bf16"  # ["float", "fp16", "bf16"]
-save_every_n_steps      = 1000
-save_optimizer_state    = False
-save_model_as           = "safetensors" # ["ckpt", "safetensors", "diffusers", "diffusers_safetensors"]
+save_precision              = "fp16"  # ["float", "fp16", "bf16"]
+save_n_type                 = "save_every_n_epochs"  # ["save_every_n_epochs", "save_every_n_steps", "save_n_epoch_ratio"]
+save_n_type_value           = 1
+save_optimizer_state        = False
+save_model_as               = "safetensors" # ["ckpt", "safetensors", "diffusers", "diffusers_safetensors"]
 ### Sample Prompt Config
 enable_sample               = True
 sampler                     = "euler_a"  # ["ddim", "pndm", "lms", "euler", "euler_a", "heun", "dpm_2", "dpm_2_a", "dpmsolver","dpmsolver++", "dpmsingle", "k_lms", "k_euler", "k_euler_a", "k_dpm_2", "k_dpm_2_a"]
@@ -152,7 +247,7 @@ if prompt_from_caption != "none":
     custom_prompt           = ""
 num_prompt                  = 2
 sample_interval             = 100
-logging_dir             = "/content/fine_tune/logs"
+logging_dir                 = os.path.join(root_dir, "fine_tune/logs")
 
 os.chdir(repo_dir)
 
@@ -172,9 +267,8 @@ train_config = {
         "cache_text_encoder_outputs" : cache_text_encoder_outputs,
         "enable_bucket"              : True,
         "no_half_vae"                : no_half_vae,
-        "cache_latents"              : True,
-        "cache_latents_to_disk"      : True,
-        "vae_batch_size"             : 4,
+        "cache_latents"              : True if not color_aug else False,
+        "cache_latents_to_disk"      : True if not color_aug else False,
         "min_timestep"               : min_timestep,
         "max_timestep"               : max_timestep,
         "shuffle_caption"            : True if not cache_text_encoder_outputs else False,
@@ -185,39 +279,28 @@ train_config = {
     },
     "dataset_arguments": {
         "debug_dataset"                 : False,
-        "in_json"                       : in_json,
-        "train_data_dir"                : train_data_dir,
-        "dataset_repeats"               : num_repeats,
-        "keep_tokens"                   : keep_tokens,
-        "resolution"                    : str(resolution) + ',' + str(resolution),
-        "caption_dropout_rate"          : 0,
-        "caption_tag_dropout_rate"      : 0,
-        "caption_dropout_every_n_epochs": 0,
-        "color_aug"                     : False,
-        "face_crop_aug_range"           : None,
-        "token_warmup_min"              : 1,
-        "token_warmup_step"             : 0,
     },
     "training_arguments": {
         "output_dir"                    : output_dir,
         "output_name"                   : project_name if project_name else "last",
         "save_precision"                : save_precision,
-        "save_every_n_steps"            : save_every_n_steps,
-        "save_n_epoch_ratio"            : None,
+        "save_every_n_epochs"           : save_n_type_value if save_n_type == "save_every_n_epochs" else None,
+        "save_every_n_steps"            : save_n_type_value if save_n_type == "save_every_n_steps" else None,
+        "save_n_epoch_ratio"            : save_n_type_value if save_n_type == "save_n_epoch_ratio" else None,
         "save_last_n_epochs"            : None,
-        "save_state"                    : None,
+        "save_state"                    : save_optimizer_state,
         "save_last_n_epochs_state"      : None,
-        "resume"                        : None,
         "train_batch_size"              : train_batch_size,
         "max_token_length"              : 225,
         "mem_eff_attn"                  : False,
         "xformers"                      : True,
-        "max_train_steps"               : max_train_steps,
-        "max_data_loader_n_workers"     : 8,
+        "max_train_steps"               : max_train_n_type_value if max_train_n_type == "max_train_steps" else None,
+        "max_train_epochs"              : max_train_n_type_value if max_train_n_type == "max_train_epochs" else None,
+        "max_data_loader_n_workers"     : max_data_loader_n_workers,
         "persistent_data_loader_workers": True,
         "seed"                          : seed if seed > 0 else None,
         "gradient_checkpointing"        : gradient_checkpointing,
-        "gradient_accumulation_steps"   : 1,
+        "gradient_accumulation_steps"   : gradient_accumulation_steps,
         "mixed_precision"               : mixed_precision,
     },
     "logging_arguments": {
@@ -247,7 +330,7 @@ def prompt_convert(enable_sample, num_prompt, train_data_dir, prompt_config, cus
 
         if not caption_files:
             if not custom_prompt:
-                custom_prompt = "masterpiece, best quality, 1girl, aqua eyes, baseball cap, blonde hair, closed mouth, earrings, green background, hat, hoop earrings, jewelry, looking at viewer, shirt, short hair, simple background, solo, upper body, yellow shirt"
+                custom_prompt = "1boy, aqua eyes, baseball cap, blonde hair, closed mouth, earrings, green background, hat, stud earrings, jewelry, looking at viewer, shirt, short hair, simple background, solo, upper body, yellow shirt, best quality, amazing quality, very aesthetic, absurdres"
             new_prompt_config = prompt_config.copy()
             new_prompt_config['prompt']['subset'] = [
                 {"prompt": positive_prompt + custom_prompt if positive_prompt else custom_prompt}
@@ -287,7 +370,7 @@ def eliminate_none_variable(config):
 try:
     train_config.update(optimizer_config)
 except NameError:
-    raise NameError("'optimizer_config' dictionary is missing. Please run  '4.1. Optimizer Config' cell.")
+    raise NameError("'optimizer_config' dictionary is missing. Please run  'Optimizer Config' cell.")
 
 advanced_training_warning = False
 try:
@@ -326,13 +409,16 @@ import subprocess
 
 # Check your config here if you want to edit something:
 # - `sample_prompt` : ~/sd-train/fine_tune/config/sample_prompt.toml
+# - `dataset_config` : ~/sd-train/fine_tune/config/dataset_config.toml
 # - `config_file` : ~/sd-train/fine_tune/config/config_file.toml
 
 # You can import config from another session if you want.
 
-sample_prompt   = "~/sd-train/fine_tune/config/sample_prompt.toml"
-config_file     = "~/sd-train/fine_tune/config/config_file.toml"
+sample_prompt       = os.path.join(root_dir, "fine_tune/config/sample_prompt.toml")
+dataset_config_file = os.path.join(root_dir, "fine_tune/config/dataset_config.toml")
+config_file         = os.path.join(root_dir, "fine_tune/config/config_file.toml")
 
+accelerate_config = os.path.join(repo_dir, "accelerate_config/config.yaml")
 num_cpu_threads_per_process = 8
 
 def read_file(filename):
@@ -363,6 +449,7 @@ accelerate_conf = {
 
 train_conf = {
     "sample_prompts"  : sample_prompt if os.path.exists(sample_prompt) else None,
+    "dataset_config"  : dataset_config_file,
     "config_file"     : config_file,
     "wandb_api_key"   : wandb_api_key if wandb_api_key else None,
 }
