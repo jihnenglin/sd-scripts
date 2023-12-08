@@ -217,7 +217,9 @@ else:
 
     for subfolder in train_subfolders:
         folder_name = os.path.basename(subfolder)
+        metadata_config["_train_data_dir"] = subfolder
         metadata_config["_out_json"] = f"{metadata_json[:-5]}_{folder_name}.json"
+        bucketing_config["_train_data_dir"] = subfolder
         bucketing_config["_in_json"] = f"{metadata_json[:-5]}_{folder_name}.json"
         bucketing_config["_out_json"] = f"{bucketing_json[:-5]}_{folder_name}.json"
 
