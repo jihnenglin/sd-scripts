@@ -170,10 +170,13 @@ def train(args):
         accelerator.wait_for_everyone()
 
     # 学習を準備する：モデルを適切な状態にする
+    train_unet = args.learning_rate > 0
+
     training_models = []
-    if args.gradient_checkpointing:
-        unet.enable_gradient_checkpointing()
-    training_models.append(unet)
+    if train_unet:
+        if args.gradient_checkpointing:
+            unet.enable_gradient_checkpointing()
+        training_models.append(unet)
 
     if args.train_text_encoder:
         accelerator.print("enable text encoder training")
@@ -203,18 +206,22 @@ def train(args):
         m.requires_grad_(True)
 
     trainable_params = []
-    if (args.learning_rate_te is None or not args.train_text_encoder) and \
-       (args.learning_rate_vae is None or not args.train_vae):
-        for m in training_models:
-            trainable_params.extend(m.parameters())
-    else:
-        trainable_params = [
-            {"params": list(unet.parameters()), "lr": args.learning_rate},
-        ]
-        if args.learning_rate_te is not None and args.train_text_encoder:
-            trainable_params.append({"params": list(text_encoder.parameters()), "lr": args.learning_rate_te})
-        if args.learning_rate_vae is not None and args.train_vae:
-            trainable_params.append({"params": list(vae.parameters()), "lr": args.learning_rate_vae})
+    if train_unet:
+        trainable_params.append({"params": list(unet.parameters()), "lr": args.learning_rate})
+    if args.learning_rate_te is not None and args.train_text_encoder:
+        trainable_params.append({"params": list(text_encoder.parameters()), "lr": args.learning_rate_te})
+    if args.learning_rate_vae is not None and args.train_vae:
+        trainable_params.append({"params": list(vae.parameters()), "lr": args.learning_rate_vae})
+
+    # calculate number of trainable parameters
+    n_params = 0
+    for params in params_to_optimize:
+        for p in params["params"]:
+            n_params += p.numel()
+
+    accelerator.print(f"train unet: {train_unet}, text_encoder: {args.train_text_encoder}, VAE: {args.train_vae}")
+    accelerator.print(f"number of models: {len(training_models)}")
+    accelerator.print(f"number of trainable parameters: {n_params}")
 
     # 学習に必要なクラスを準備する
     accelerator.print("prepare optimizer, data loader etc.")
@@ -255,23 +262,17 @@ def train(args):
         text_encoder.to(weight_dtype)
 
     # acceleratorがなんかよろしくやってくれるらしい
-    if args.train_text_encoder and args.train_vae:
-        unet, text_encoder, vae, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
-            unet, text_encoder, vae, optimizer, train_dataloader, lr_scheduler
-        )
-    elif args.train_text_encoder:
-        unet, text_encoder, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
-            unet, text_encoder, optimizer, train_dataloader, lr_scheduler
-        )
+    if train_unet:
+        unet = accelerator.prepare(unet)
+        (unet,) = train_util.transform_models_if_DDP([unet])
+    if args.train_text_encoder:
+        text_encoder = accelerator.prepare(text_encoder)
+        (text_encoder,) = train_util.transform_models_if_DDP([text_encoder])
     elif args.train_vae:
-        unet, vae, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
-            unet, vae, optimizer, train_dataloader, lr_scheduler
-        )
-    else:
-        unet, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(unet, optimizer, train_dataloader, lr_scheduler)
+        vae = accelerator.prepare(vae)
+        (vae,) = train_util.transform_models_if_DDP([vae])
 
-    # transform DDP after prepare
-    text_encoder, unet, vae = train_util.transform_if_model_is_DDP(text_encoder, unet, vae)
+    optimizer, train_dataloader, lr_scheduler = accelerator.prepare(optimizer, train_dataloader, lr_scheduler)
 
     # 実験的機能：勾配も含めたfp16学習を行う　PyTorchにパッチを当ててfp16でのgrad scaleを有効にする
     if args.full_fp16:
