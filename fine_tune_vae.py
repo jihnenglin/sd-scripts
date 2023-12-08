@@ -194,6 +194,7 @@ def train(args):
 
     if args.train_vae:
         accelerator.print("enable VAE training")
+        vae = vae.to(accelerator.device)
         if args.gradient_checkpointing:
             vae.gradient_checkpointing_enable()
         training_models.append(vae)
@@ -332,11 +333,9 @@ def train(args):
                         latents = batch["latents"].to(accelerator.device)  # .to(dtype=weight_dtype)
                     elif not args.train_vae:
                         # latentに変換
-                        images = batch["images"].to(dtype=weight_dtype)
-                        latents = vae.encode(images).latent_dist.sample()
+                        latents = vae.encode(batch["images"].to(dtype=weight_dtype)).latent_dist.sample()
                     else:
-                        images = batch["images"].to(device=accelerator.device)
-                        latents = vae.encode(images).latent_dist.sample()
+                        latents = vae.encode(batch["images"]).latent_dist.sample()
                     latents = latents * 0.18215
                 b_size = latents.shape[0]
 
