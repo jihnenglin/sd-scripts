@@ -22,6 +22,7 @@ batch_size = 8
 max_data_loader_n_workers = 32
 skip_existing = True
 
+rating_tag_map = {"g": None, "s": "slightly nsfw", "q": "fairly nsfw", "e": "very nsfw"}
 quality_thresholds = [150, 100, 75, 0, -4]
 quality_tag_names = ["best quality", "amazing quality", "great quality", "normal quality", "bad quality", "worst quality"]
 aesthetic_thresholds = [6.675, 6.0, 5.0]
@@ -128,6 +129,8 @@ def get_tag_name(score, thresholds, tag_names):
         tag = tag_names[-1]
     return tag
 
+rating_tag_names = rating_tag_map.values()
+
 model = MLP(768)  # CLIP embedding dim is 768 for CLIP ViT L 14
 
 s = torch.load("sac+logos+ava1-l14-linearMSE.pth")   # load the model you trained previously or the model available in this repo
@@ -151,10 +154,11 @@ with torch.no_grad():
 
             with open(f"{img_paths[i]}.json", "r") as f:
                 metadata = json.load(f)
+                rating_tag = rating_tag_map[metadata["rating"]]
                 quality_tag = get_tag_name(metadata["score"], quality_thresholds, quality_tag_names)
                 year_tag = f"year {metadata['created_at'][:4]}"
 
-            #print(img_paths[i], metadata["score"], scores[i], f"{quality_tag}, {aesthetic_tag}, {year_tag}, ")
+            #print(img_paths[i], metadata["score"], scores[i], f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
 
             directory, filename = os.path.split(img_paths[i])
             filename_no_extension, extension = os.path.splitext(filename)
@@ -166,13 +170,17 @@ with torch.no_grad():
                 if tags[-3] in aesthetic_tag_names:
                     if skip_existing:
                         continue
-                    tags[-4] = quality_tag
-                    tags[-3] = aesthetic_tag
-                    tags[-2] = year_tag
+                    if tags[-5] in rating_tag_names:
+                        tags = tags[:-5]
+                    else:
+                        tags = tags[:-4]
+                    if rating_tag:
+                        tags.append(rating_tag)
+                    tags.extend([quality_tag, aesthetic_tag, year_tag, ""])
                     f.seek(0)
                     f.truncate()
                     f.write(", ".join(tags))
                 else:
-                    f.write(f"{quality_tag}, {aesthetic_tag}, {year_tag}, ")
+                    f.write(f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
 
         #input("Press enter to continue")
