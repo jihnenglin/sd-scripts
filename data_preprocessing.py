@@ -19,7 +19,7 @@ random_color = False
 recursive = True
 
 
-batch_size = 8
+batch_size = 64
 supported_types = [
     ".png",
     ".jpg",
