@@ -215,7 +215,7 @@ def train(args):
 
     # calculate number of trainable parameters
     n_params = 0
-    for params in params_to_optimize:
+    for params in trainable_params:
         for p in params["params"]:
             n_params += p.numel()
 
