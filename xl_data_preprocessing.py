@@ -112,6 +112,7 @@ input("Press the Enter key to continue: ")
 
 
 ## Bucketing and Latents Caching
+import glob
 import time
 import subprocess
 
