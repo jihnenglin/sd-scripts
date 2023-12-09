@@ -143,7 +143,7 @@ def get_tags(img_path, idx):
             rating_tag = rating_tag_map[metadata["rating"]]
             quality_tag = get_tag_name(metadata["score"], quality_thresholds, quality_tag_names)
             year_tag = f"year {metadata['created_at'][:4]}"
-    return rating_tag, quality_tag, year_tag
+    return rating_tag, quality_tag, year_tag, metadata["score"]
 
 def aesthetic_score_inference(images, device, model2, model):
     with torch.no_grad():
@@ -185,12 +185,12 @@ for data_entry in tqdm(data, smoothing=0.0):
                     else:
                         tags = tags[:-4]
 
-                    rating_tag, quality_tag, year_tag = get_tags(img_paths[i], idx)
+                    rating_tag, quality_tag, year_tag, quality_score = get_tags(img_paths[i], idx)
 
                     if scores is None:
                         scores = aesthetic_score_inference(images, device, model2, model)
                     aesthetic_tag = get_tag_name(scores[i], aesthetic_thresholds, aesthetic_tag_names)
-                    #print(img_paths[i], metadata["score"], scores[i], f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
+                    #print(img_paths[i], quality_score, scores[i], f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
 
                     if rating_tag:
                         tags.append(rating_tag)
@@ -199,12 +199,12 @@ for data_entry in tqdm(data, smoothing=0.0):
                     f.truncate()
                     f.write(", ".join(tags))
                 else:
-                    rating_tag, quality_tag, year_tag = get_tags(img_paths[i], idx)
+                    rating_tag, quality_tag, year_tag, quality_score = get_tags(img_paths[i], idx)
 
                     if scores is None:
                         scores = aesthetic_score_inference(images, device, model2, model)
                     aesthetic_tag = get_tag_name(scores[i], aesthetic_thresholds, aesthetic_tag_names)
-                    #print(img_paths[i], metadata["score"], scores[i], f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
+                    #print(img_paths[i], quality_score, scores[i], f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
 
                     f.write(f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
             except IndexError as e:
