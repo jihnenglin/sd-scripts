@@ -16,11 +16,11 @@ import library.train_util as train_util
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0"    # choose GPU if you are on a multi GPU server
 
 root_dir = "~/sd-train"
-train_data_dir_path = Path(os.path.join(root_dir, "scraped_data"))
+train_data_dir_path = Path(os.path.join(root_dir, "train_data"))
 recursive = False
 batch_size = 8
 max_data_loader_n_workers = 32
-skip_existing = True
+skip_existing = False
 
 rating_tag_map = {"g": None, "s": "slightly nsfw", "q": "fairly nsfw", "e": "very nsfw"}
 quality_thresholds = [150, 100, 75, 0, -4]
@@ -55,6 +55,7 @@ class ImageLoadingDataset(torch.utils.data.Dataset):
 
 image_paths: list[str] = [str(p) for p in train_util.glob_images_pathlib(train_data_dir_path, recursive)]
 print(f"found {len(image_paths)} images.")
+#input("Press enter to continue")
 
 dataset = ImageLoadingDataset(image_paths)
 data = torch.utils.data.DataLoader(
@@ -140,47 +141,62 @@ model.load_state_dict(s)
 model.to("cuda")
 model.eval()
 
+
 with torch.no_grad():
     for data_entry in tqdm(data, smoothing=0.0):
         images, img_paths = data_entry
+
         images = images.to(device)
         image_features = model2.encode_image(images)
 
         im_emb_arr = normalized(image_features.cpu().detach().numpy() )
         scores = model(torch.from_numpy(im_emb_arr).to(device).type(torch.cuda.FloatTensor))
 
-        for i in range(batch_size):
+        for i in range(len(images)):
             aesthetic_tag = get_tag_name(scores[i], aesthetic_thresholds, aesthetic_tag_names)
-
-            with open(f"{img_paths[i]}.json", "r") as f:
-                metadata = json.load(f)
-                rating_tag = rating_tag_map[metadata["rating"]]
-                quality_tag = get_tag_name(metadata["score"], quality_thresholds, quality_tag_names)
-                year_tag = f"year {metadata['created_at'][:4]}"
+            
+            directory, filename = os.path.split(img_paths[i])
+            filename_no_extension, extension = os.path.splitext(filename)
+            
+            try:
+                with open(f"{img_paths[i]}.json", "r") as f:
+                    metadata = json.load(f)
+                    rating_tag = rating_tag_map[metadata["rating"]]
+                    quality_tag = get_tag_name(metadata["score"], quality_thresholds, quality_tag_names)
+                    year_tag = f"year {metadata['created_at'][:4]}"
+            except FileNotFoundError:
+                metadata_path = os.path.join(directory, f"{filename_no_extension}.webp.json")
+                with open(metadata_path, "r") as f:
+                    metadata = json.load(f)
+                    rating_tag = rating_tag_map[metadata["rating"]]
+                    quality_tag = get_tag_name(metadata["score"], quality_thresholds, quality_tag_names)
+                    year_tag = f"year {metadata['created_at'][:4]}"
 
             #print(img_paths[i], metadata["score"], scores[i], f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
 
-            directory, filename = os.path.split(img_paths[i])
-            filename_no_extension, extension = os.path.splitext(filename)
             tag_filename = filename_no_extension + ".txt"
             tag_path = os.path.join(directory, tag_filename)
 
             with open(tag_path, "r+") as f:
                 tags = f.read().split(", ")
-                if tags[-3] in aesthetic_tag_names:
-                    if skip_existing:
-                        continue
-                    if tags[-5] in rating_tag_names:
-                        tags = tags[:-5]
+                try:
+                    if tags[-3] in aesthetic_tag_names:
+                        if skip_existing:
+                            continue
+                        if tags[-5] in rating_tag_names:
+                            tags = tags[:-5]
+                        else:
+                            tags = tags[:-4]
+                        if rating_tag:
+                            tags.append(rating_tag)
+                        tags.extend([quality_tag, aesthetic_tag, year_tag, ""])
+                        f.seek(0)
+                        f.truncate()
+                        f.write(", ".join(tags))
                     else:
-                        tags = tags[:-4]
-                    if rating_tag:
-                        tags.append(rating_tag)
-                    tags.extend([quality_tag, aesthetic_tag, year_tag, ""])
-                    f.seek(0)
-                    f.truncate()
-                    f.write(", ".join(tags))
-                else:
-                    f.write(f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
+                        f.write(f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
+                except IndexError as e:
+                    print(f"Cannot write tag: {img_paths[i]}, error: {e}")
+                    quit()
 
         #input("Press enter to continue")
