@@ -17,12 +17,13 @@ vae_path = None
 dataset_repeats = 1
 # If `recursive`, additionally make JSON files for every top-level folder (`dataset.subset`) in `train_data_dir`.
 # If `recursive`, the additional JSON file names would be `{default_json_file_name[:-5]}_{folder_name}.json`
-in_json = os.path.join(json_dir, "meta_lat.json")
-resolution = 1024  # [512, 640, 768, 896, 1024]
+in_json         = os.path.join(json_dir, "meta_lat.json")
+resolution      = 1024  # [512, 640, 768, 896, 1024]
+shuffle_caption = False
 # keep heading N tokens when shuffling caption tokens (token means comma separated strings)
-keep_tokens = 0
-color_aug = False
-flip_aug = False
+keep_tokens     = 0
+color_aug       = False
+flip_aug        = False
 
 def get_supported_images(folder):
     supported_extensions = (".png", ".jpg", ".jpeg", ".webp", ".bmp")
@@ -49,40 +50,41 @@ subsets = []
 
 dataset_config = {
     "general": {
-        "resolution": resolution,
-        "enable_bucket": True,
-        "min_bucket_reso": 512,
-        "max_bucket_reso": 2048,
-        "bucket_reso_steps": 64,
-        "bucket_no_upscale": False,
+        "resolution"        : resolution,
+        "enable_bucket"     : True,
+        "min_bucket_reso"   : 512,
+        "max_bucket_reso"   : 2048,
+        "bucket_reso_steps" : 64,
+        "bucket_no_upscale" : False,
     },
     "datasets": [
         {
-            "keep_tokens": keep_tokens,
-            "color_aug": color_aug,
-            "flip_aug": flip_aug,
-            "face_crop_aug_range": None,
-            "caption_dropout_rate": 0,
-            "caption_dropout_every_n_epochs": 0,
-            "caption_tag_dropout_rate": 0,
-            "subsets": subsets,
+            "shuffle_caption"                : shuffle_caption,
+            "keep_tokens"                    : keep_tokens,
+            "color_aug"                      : color_aug,
+            "flip_aug"                       : flip_aug,
+            "face_crop_aug_range"            : None,
+            "caption_dropout_rate"           : 0,
+            "caption_dropout_every_n_epochs" : 0,
+            "caption_tag_dropout_rate"       : 0,
+            "subsets"                        : subsets,
         }
     ],
 }
 
 if train_supported_images:
     subsets.append({
-        "image_dir": train_data_dir,
-        "num_repeats": dataset_repeats,
-        "metadata_file": in_json,
+        "image_dir"     : train_data_dir,
+        "num_repeats"   : dataset_repeats,
+        "metadata_file" : in_json,
     })
 
 for subfolder in train_subfolders:
     folder_name, num_repeats = get_folder_name_and_num_repeats(subfolder)
     subsets.append({
-        "image_dir": subfolder,
-        "num_repeats": num_repeats,
-        "metadata_file": f"{in_json[:-5]}_{folder_name}.json",
+        "image_dir"     : subfolder,
+        "num_repeats"   : num_repeats,
+        "metadata_file" : f"{in_json[:-5]}_{folder_name}.json",
     })
 
 dataset_config_file = os.path.join(config_dir, "dataset_config.toml")
@@ -271,7 +273,6 @@ train_config = {
         "cache_latents_to_disk"      : True if not color_aug else False,
         "min_timestep"               : min_timestep,
         "max_timestep"               : max_timestep,
-        "shuffle_caption"            : True if not cache_text_encoder_outputs else False,
     },
     "model_arguments": {
         "pretrained_model_name_or_path" : model_path,
