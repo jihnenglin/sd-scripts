@@ -130,6 +130,30 @@ def get_tag_name(score, thresholds, tag_names):
         tag = tag_names[-1]
     return tag
 
+def get_tags(img_path, idx):
+    try:
+        with open(f"{img_path}.json", "r") as f:
+            metadata = json.load(f)
+            rating_tag = rating_tag_map[metadata["rating"]]
+            quality_tag = get_tag_name(metadata["score"], quality_thresholds, quality_tag_names)
+            year_tag = f"year {metadata['created_at'][:4]}"
+    except FileNotFoundError:
+        with open(f"{img_path[:idx]}.webp.json", "r") as f:
+            metadata = json.load(f)
+            rating_tag = rating_tag_map[metadata["rating"]]
+            quality_tag = get_tag_name(metadata["score"], quality_thresholds, quality_tag_names)
+            year_tag = f"year {metadata['created_at'][:4]}"
+    return rating_tag, quality_tag, year_tag
+
+def aesthetic_score_inference(images, device, model2, model):
+    with torch.no_grad():
+        images = images.to(device)
+        image_features = model2.encode_image(images)
+
+        im_emb_arr = normalized(image_features.cpu().detach().numpy() )
+        scores = model(torch.from_numpy(im_emb_arr).to(device).type(torch.cuda.FloatTensor))
+    return scores
+
 rating_tag_names = rating_tag_map.values()
 
 model = MLP(768)  # CLIP embedding dim is 768 for CLIP ViT L 14
@@ -142,61 +166,49 @@ model.to("cuda")
 model.eval()
 
 
-with torch.no_grad():
-    for data_entry in tqdm(data, smoothing=0.0):
-        images, img_paths = data_entry
+for data_entry in tqdm(data, smoothing=0.0):
+    images, img_paths = data_entry
 
-        images = images.to(device)
-        image_features = model2.encode_image(images)
+    scores = None
+    for i in range(len(img_paths)):
+        idx = img_paths[i].rfind(".")
+        tag_path = f"{img_paths[i][:idx]}.txt"
 
-        im_emb_arr = normalized(image_features.cpu().detach().numpy() )
-        scores = model(torch.from_numpy(im_emb_arr).to(device).type(torch.cuda.FloatTensor))
-
-        for i in range(len(images)):
-            aesthetic_tag = get_tag_name(scores[i], aesthetic_thresholds, aesthetic_tag_names)
-
-            directory, filename = os.path.split(img_paths[i])
-            filename_no_extension, extension = os.path.splitext(filename)
-
+        with open(tag_path, "r+") as f:
+            tags = f.read().split(", ")
             try:
-                with open(f"{img_paths[i]}.json", "r") as f:
-                    metadata = json.load(f)
-                    rating_tag = rating_tag_map[metadata["rating"]]
-                    quality_tag = get_tag_name(metadata["score"], quality_thresholds, quality_tag_names)
-                    year_tag = f"year {metadata['created_at'][:4]}"
-            except FileNotFoundError:
-                metadata_path = os.path.join(directory, f"{filename_no_extension}.webp.json")
-                with open(metadata_path, "r") as f:
-                    metadata = json.load(f)
-                    rating_tag = rating_tag_map[metadata["rating"]]
-                    quality_tag = get_tag_name(metadata["score"], quality_thresholds, quality_tag_names)
-                    year_tag = f"year {metadata['created_at'][:4]}"
-
-            #print(img_paths[i], metadata["score"], scores[i], f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
-
-            tag_filename = filename_no_extension + ".txt"
-            tag_path = os.path.join(directory, tag_filename)
-
-            with open(tag_path, "r+") as f:
-                tags = f.read().split(", ")
-                try:
-                    if tags[-3] in aesthetic_tag_names:
-                        if skip_existing:
-                            continue
-                        if tags[-5] in rating_tag_names:
-                            tags = tags[:-5]
-                        else:
-                            tags = tags[:-4]
-                        if rating_tag:
-                            tags.append(rating_tag)
-                        tags.extend([quality_tag, aesthetic_tag, year_tag, ""])
-                        f.seek(0)
-                        f.truncate()
-                        f.write(", ".join(tags))
+                if tags[-3] in aesthetic_tag_names:
+                    if skip_existing:
+                        continue
+                    if tags[-5] in rating_tag_names:
+                        tags = tags[:-5]
                     else:
-                        f.write(f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
-                except IndexError as e:
-                    print(f"Cannot write tag: {img_paths[i]}, error: {e}")
-                    quit()
+                        tags = tags[:-4]
 
-        #input("Press enter to continue")
+                    rating_tag, quality_tag, year_tag = get_tags(img_paths[i], idx)
+
+                    if scores is None:
+                        scores = aesthetic_score_inference(images, device, model2, model)
+                    aesthetic_tag = get_tag_name(scores[i], aesthetic_thresholds, aesthetic_tag_names)
+                    #print(img_paths[i], metadata["score"], scores[i], f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
+
+                    if rating_tag:
+                        tags.append(rating_tag)
+                    tags.extend([quality_tag, aesthetic_tag, year_tag, ""])
+                    f.seek(0)
+                    f.truncate()
+                    f.write(", ".join(tags))
+                else:
+                    rating_tag, quality_tag, year_tag = get_tags(img_paths[i], idx)
+
+                    if scores is None:
+                        scores = aesthetic_score_inference(images, device, model2, model)
+                    aesthetic_tag = get_tag_name(scores[i], aesthetic_thresholds, aesthetic_tag_names)
+                    #print(img_paths[i], metadata["score"], scores[i], f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
+
+                    f.write(f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
+            except IndexError as e:
+                print(f"Corrupted tag file: {tag_path}, error: {e}")
+                quit()
+
+    #input("Press enter to continue")
