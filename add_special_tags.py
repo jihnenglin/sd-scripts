@@ -51,7 +51,18 @@ class ImageLoadingDataset(torch.utils.data.Dataset):
         except Exception as e:
             print(f"Could not load image path / 画像を読み込めません: {img_path}, error: {e}")
             return None
-        return (image, img_path)
+
+        dot_idx = img_path.rfind(".")
+        tag_path = f"{img_path[:dot_idx]}.txt"
+
+        try:
+            with open(tag_path, "r") as f:
+                tags = f.read().split(", ")
+        except Exception as e:
+            print(f"Could not load tag path: {tag_path}, error: {e}")
+            return None
+
+        return (image, img_path, tag_path, tags)
 
 image_paths: list[str] = [str(p) for p in train_util.glob_images_pathlib(train_data_dir_path, recursive)]
 print(f"found {len(image_paths)} images.")
@@ -130,7 +141,7 @@ def get_tag_name(score, thresholds, tag_names):
         tag = tag_names[-1]
     return tag
 
-def get_tags(img_path, idx):
+def get_tags(img_path):
     try:
         with open(f"{img_path}.json", "r") as f:
             metadata = json.load(f)
@@ -138,7 +149,8 @@ def get_tags(img_path, idx):
             quality_tag = get_tag_name(metadata["score"], quality_thresholds, quality_tag_names)
             year_tag = f"year {metadata['created_at'][:4]}"
     except FileNotFoundError:
-        with open(f"{img_path[:idx]}.webp.json", "r") as f:
+        dot_idx = img_path.rfind(".")
+        with open(f"{img_path[:dot_idx]}.webp.json", "r") as f:
             metadata = json.load(f)
             rating_tag = rating_tag_map[metadata["rating"]]
             quality_tag = get_tag_name(metadata["score"], quality_thresholds, quality_tag_names)
@@ -167,25 +179,22 @@ model.eval()
 
 
 for data_entry in tqdm(data, smoothing=0.0):
-    images, img_paths = data_entry
+    images, img_paths, tag_paths, tags = data_entry
 
     scores = None
     for i in range(len(img_paths)):
-        idx = img_paths[i].rfind(".")
-        tag_path = f"{img_paths[i][:idx]}.txt"
 
-        with open(tag_path, "r+") as f:
-            tags = f.read().split(", ")
+        with open(tag_paths[i], "a") as f:
             try:
-                if tags[-3] in aesthetic_tag_names:
+                if tags[i][-3] in aesthetic_tag_names:
                     if skip_existing:
                         continue
-                    if tags[-5] in rating_tag_names:
-                        tags = tags[:-5]
+                    if tags[i][-5] in rating_tag_names:
+                        tags[i] = tags[i][:-5]
                     else:
-                        tags = tags[:-4]
+                        tags[i] = tags[i][:-4]
 
-                    rating_tag, quality_tag, year_tag, quality_score = get_tags(img_paths[i], idx)
+                    rating_tag, quality_tag, year_tag, quality_score = get_tags(img_paths[i])
 
                     if scores is None:
                         scores = aesthetic_score_inference(images, device, model2, model)
@@ -193,13 +202,13 @@ for data_entry in tqdm(data, smoothing=0.0):
                     #print(img_paths[i], quality_score, scores[i], f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
 
                     if rating_tag:
-                        tags.append(rating_tag)
-                    tags.extend([quality_tag, aesthetic_tag, year_tag, ""])
+                        tags[i].append(rating_tag)
+                    tags[i].extend([quality_tag, aesthetic_tag, year_tag, ""])
                     f.seek(0)
                     f.truncate()
-                    f.write(", ".join(tags))
+                    f.write(", ".join(tags[i]))
                 else:
-                    rating_tag, quality_tag, year_tag, quality_score = get_tags(img_paths[i], idx)
+                    rating_tag, quality_tag, year_tag, quality_score = get_tags(img_paths[i])
 
                     if scores is None:
                         scores = aesthetic_score_inference(images, device, model2, model)
@@ -208,7 +217,7 @@ for data_entry in tqdm(data, smoothing=0.0):
 
                     f.write(f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
             except IndexError as e:
-                print(f"Corrupted tag file: {tag_path}, error: {e}")
+                print(f"Corrupted tag file: {tag_paths[i]}, error: {e}")
                 quit()
 
     #input("Press enter to continue")
