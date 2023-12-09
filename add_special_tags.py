@@ -154,10 +154,10 @@ with torch.no_grad():
 
         for i in range(len(images)):
             aesthetic_tag = get_tag_name(scores[i], aesthetic_thresholds, aesthetic_tag_names)
-            
+
             directory, filename = os.path.split(img_paths[i])
             filename_no_extension, extension = os.path.splitext(filename)
-            
+
             try:
                 with open(f"{img_paths[i]}.json", "r") as f:
                     metadata = json.load(f)
