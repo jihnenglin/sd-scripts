@@ -10,7 +10,7 @@ def split_dict(dictionary, num_chunks):
     chunk_size = len(keys) // num_chunks
     last_chunk_size = len(keys) % num_chunks
     key_chunks = [keys[i:i + chunk_size] for i in range(0, len(keys) - last_chunk_size, chunk_size)]
-    key_chunks[-1].extend(keys[-last_chunk_size:])
+    key_chunks[0].extend(keys[-last_chunk_size:])
     result_dicts = [{key: dictionary[key] for key in chunk} for chunk in key_chunks]
     return result_dicts
 
