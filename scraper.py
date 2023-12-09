@@ -44,6 +44,7 @@ else:
 
 if booru == "Danbooru":
     url = "https://danbooru.donmai.us/posts?tags={}".format(tags)
+    #url = "https://danbooru.donmai.us/posts/"
 elif booru == "Gelbooru":
     url = "https://gelbooru.com/index.php?page=post&s=list&tags={}".format(tags)
 else:
