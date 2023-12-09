@@ -218,8 +218,6 @@ in_json                 = os.path.join(json_dir, "meta_lat.json")
 ### SDXL Config
 gradient_checkpointing  = True
 no_half_vae             = True
-# Recommended parameter for SDXL training but if you enable it, `shuffle_caption` won't work
-cache_text_encoder_outputs = True
 # These options can be used to train U-Net with different timesteps. The default values are 0 and 1000.
 min_timestep = 0
 max_timestep = 1000
@@ -266,7 +264,7 @@ prompt_config = {
 
 train_config = {
     "sdxl_arguments": {
-        "cache_text_encoder_outputs" : cache_text_encoder_outputs,
+        "cache_text_encoder_outputs" : True if not shuffle_caption and not train_text_encoder else False,
         "enable_bucket"              : True,
         "no_half_vae"                : no_half_vae,
         "cache_latents"              : True if not color_aug else False,
