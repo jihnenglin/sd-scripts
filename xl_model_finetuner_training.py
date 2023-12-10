@@ -118,7 +118,7 @@ optimizer_args = "[ \"scale_parameter=False\", \"relative_step=False\", \"warmup
 # Different `optimizer_type` and `network_category` for some condition requires different learning rate. It's recommended to set `text_encoder_lr = 1/2 * unet_lr`
 learning_rate = 2e-6
 max_grad_norm = 0.0  # default = 1.0; 0.0 for no clipping. It is recommended to be set to 0.0 when using AdaFactor with fixed learning rate
-train_text_encoder = True
+train_text_encoder = False
 # ViT-L
 learning_rate_te1 = 2e-6
 # BiG-G
@@ -224,14 +224,14 @@ max_timestep = 1000
 resolution                  = 1024  # [512, 640, 768, 896, 1024]
 ### General Config
 max_train_n_type            = "max_train_epochs"  # ["max_train_steps", "max_train_epochs"]
-max_train_n_type_value      = 10
+max_train_n_type_value      = 1
 train_batch_size            = 4
 max_data_loader_n_workers   = 32
 gradient_accumulation_steps = 8
 mixed_precision             = "bf16"  # ["no","fp16","bf16"]
-seed                        = 1450
+seed                        = -1
 ### Save Output Config
-save_precision              = "bf16"  # ["float", "fp16", "bf16"]
+save_precision              = "fp16"  # ["float", "fp16", "bf16"]
 save_n_type                 = "save_every_n_epochs"  # ["save_every_n_epochs", "save_every_n_steps", "save_n_epoch_ratio"]
 save_n_type_value           = 1
 save_optimizer_state        = True
