@@ -187,7 +187,9 @@ multires_noise_iterations = 10
 multires_noise_discount   = 0.3
 ### Custom Train Function
 # Gamma for reducing the weight of high-loss timesteps. Lower numbers have a stronger effect. The paper recommends `5`. Read the paper [here](https://arxiv.org/abs/2303.09556).
-min_snr_gamma             = 5
+min_snr_gamma             = -1
+# Paper https://arxiv.org/pdf/2310.08442.pdf
+debiased_estimation_loss  = True
 
 advanced_training_config = {
     "advanced_training_config": {
@@ -197,6 +199,7 @@ advanced_training_config = {
         "multires_noise_iterations" : multires_noise_iterations if noise_control_type =="multires_noise" else None,
         "multires_noise_discount"   : multires_noise_discount if noise_control_type =="multires_noise" else None,
         "min_snr_gamma"             : min_snr_gamma if not min_snr_gamma == -1 else None,
+        "debiased_estimation_loss"  : debiased_estimation_loss,
     }
 }
 
