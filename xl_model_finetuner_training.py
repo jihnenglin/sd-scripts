@@ -19,7 +19,7 @@ dataset_repeats = 1
 # If `recursive`, the additional JSON file names would be `{default_json_file_name[:-5]}_{folder_name}.json`
 in_json         = os.path.join(json_dir, "meta_lat.json")
 resolution      = 1024  # [512, 640, 768, 896, 1024]
-shuffle_caption = False
+shuffle_caption = True
 # keep heading N tokens when shuffling caption tokens (token means comma separated strings)
 keep_tokens     = 0
 color_aug       = False
@@ -118,7 +118,7 @@ optimizer_args = "[ \"scale_parameter=False\", \"relative_step=False\", \"warmup
 # Different `optimizer_type` and `network_category` for some condition requires different learning rate. It's recommended to set `text_encoder_lr = 1/2 * unet_lr`
 learning_rate = 2e-6
 max_grad_norm = 0.0  # default = 1.0; 0.0 for no clipping. It is recommended to be set to 0.0 when using AdaFactor with fixed learning rate
-train_text_encoder = False
+train_text_encoder = True
 # ViT-L
 learning_rate_te1 = 2e-6
 # BiG-G
@@ -229,18 +229,19 @@ train_batch_size            = 4
 max_data_loader_n_workers   = 32
 gradient_accumulation_steps = 8
 mixed_precision             = "bf16"  # ["no","fp16","bf16"]
-seed                        = -1
+seed                        = 1450
 ### Save Output Config
-save_precision              = "fp16"  # ["float", "fp16", "bf16"]
+save_precision              = "bf16"  # ["float", "fp16", "bf16"]
 save_n_type                 = "save_every_n_epochs"  # ["save_every_n_epochs", "save_every_n_steps", "save_n_epoch_ratio"]
 save_n_type_value           = 1
-save_optimizer_state        = False
+save_optimizer_state        = True
 save_model_as               = "safetensors" # ["ckpt", "safetensors", "diffusers", "diffusers_safetensors"]
 ### Sample Prompt Config
 enable_sample               = True
 sampler                     = "euler_a"  # ["ddim", "pndm", "lms", "euler", "euler_a", "heun", "dpm_2", "dpm_2_a", "dpmsolver","dpmsolver++", "dpmsingle", "k_lms", "k_euler", "k_euler_a", "k_dpm_2", "k_dpm_2_a"]
-positive_prompt             = "1boy, aqua eyes, baseball cap, blonde hair, closed mouth, earrings, green background, hat, stud earrings, jewelry, looking at viewer, shirt, short hair, simple background, solo, upper body, yellow shirt, best quality, amazing quality, very aesthetic, absurdres"
+positive_prompt             = "1boy, aqua eyes, baseball cap, blonde hair, closed mouth, earrings, green background, hat, male focus, stud earrings, jewelry, looking at viewer, shirt, short hair, simple background, solo, upper body, yellow shirt, best quality, amazing quality, very aesthetic, absurdres"
 negative_prompt             = "lowres, (bad), text, error, missing, extra, fewer, cropped, jpeg artifacts, worst quality, bad quality, watermark, bad aesthetic, unfinished, chromatic aberration, scan, scan artifacts, "
+custom_prompt = ""
 # Specify `prompt_from_caption` if you want to use caption as prompt instead. Will be chosen randomly.
 prompt_from_caption         = "none"  # ["none", ".txt", ".caption"]
 if prompt_from_caption != "none":
@@ -329,7 +330,7 @@ def prompt_convert(enable_sample, num_prompt, train_data_dir, prompt_config, cus
 
         if not caption_files:
             if not custom_prompt:
-                custom_prompt = "1boy, aqua eyes, baseball cap, blonde hair, closed mouth, earrings, green background, hat, stud earrings, jewelry, looking at viewer, shirt, short hair, simple background, solo, upper body, yellow shirt, best quality, amazing quality, very aesthetic, absurdres"
+                custom_prompt = ""
             new_prompt_config = prompt_config.copy()
             new_prompt_config['prompt']['subset'] = [
                 {"prompt": positive_prompt + custom_prompt if positive_prompt else custom_prompt}
