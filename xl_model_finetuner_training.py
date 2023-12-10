@@ -119,9 +119,9 @@ optimizer_args = "[ \"scale_parameter=False\", \"relative_step=False\", \"warmup
 learning_rate = 2e-6
 max_grad_norm = 0.0  # default = 1.0; 0.0 for no clipping. It is recommended to be set to 0.0 when using AdaFactor with fixed learning rate
 train_text_encoder = False
-# ViT-L
+# CLIP ViT-L
 learning_rate_te1 = 2e-6
-# BiG-G
+# OpenCLIP ViT-bigG
 learning_rate_te2 = 2e-6
 ### LR Scheduler Config
 # `lr_scheduler` provides several methods to adjust the learning rate based on the number of epochs.
@@ -151,8 +151,8 @@ optimizer_config = {
         "optimizer_type"          : optimizer_type,
         "learning_rate"           : learning_rate,
         "train_text_encoder"      : train_text_encoder,
-        "learning_rate_te1"       : learning_rate_te1,
-        "learning_rate_te2"       : learning_rate_te2,
+        "learning_rate_te1"       : learning_rate_te1 if train_text_encoder else None,
+        "learning_rate_te2"       : learning_rate_te2 if train_text_encoder else None,
         "max_grad_norm"           : max_grad_norm,
         "optimizer_args"          : optimizer_args,
         "lr_scheduler"            : lr_scheduler,
@@ -221,6 +221,8 @@ in_json                 = os.path.join(json_dir, "meta_lat.json")
 ### SDXL Config
 gradient_checkpointing  = True
 no_half_vae             = True
+# Recommended parameter for SDXL training but if you enable it, `shuffle_caption` won't work
+cache_text_encoder_outputs = False
 # These options can be used to train U-Net with different timesteps. The default values are 0 and 1000.
 min_timestep = 0
 max_timestep = 1000
@@ -234,7 +236,7 @@ gradient_accumulation_steps = 8
 mixed_precision             = "bf16"  # ["no","fp16","bf16"]
 seed                        = -1
 ### Save Output Config
-save_precision              = "fp16"  # ["float", "fp16", "bf16"]
+save_precision              = "float"  # ["float", "fp16", "bf16"]
 save_n_type                 = "save_every_n_epochs"  # ["save_every_n_epochs", "save_every_n_steps", "save_n_epoch_ratio"]
 save_n_type_value           = 1
 save_optimizer_state        = True
@@ -268,7 +270,7 @@ prompt_config = {
 
 train_config = {
     "sdxl_arguments": {
-        "cache_text_encoder_outputs" : True if not shuffle_caption and not train_text_encoder else False,
+        "cache_text_encoder_outputs" : cache_text_encoder_outputs,
         "enable_bucket"              : True,
         "no_half_vae"                : no_half_vae,
         "cache_latents"              : True if not color_aug else False,
