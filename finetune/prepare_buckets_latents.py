@@ -58,8 +58,6 @@ def main(args):
         )
 
     train_data_dir_path = Path(args.train_data_dir)
-    image_paths: List[str] = [str(p) for p in train_util.glob_images_pathlib(train_data_dir_path, args.recursive)]
-    print(f"found {len(image_paths)} images.")
 
     if os.path.exists(args.in_json):
         print(f"loading existing metadata: {args.in_json}")
@@ -68,6 +66,9 @@ def main(args):
     else:
         print(f"no metadata / メタデータファイルがありません: {args.in_json}")
         return
+
+    image_paths: List[str] = [str(p) for p in metadata.keys()]
+    print(f"found {len(image_paths)} images.")
 
     weight_dtype = torch.float32
     if args.mixed_precision == "fp16":
