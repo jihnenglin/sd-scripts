@@ -83,8 +83,6 @@ def process_image(image_path):
             img.save(new_image_path, "JPEG")
             os.remove(image_path)
             print(f" Converted image: {image_name} to {os.path.basename(new_image_path)}")
-        else:
-            img.save(image_path, "PNG")
 
 def find_images(directory):
     images = []
@@ -129,14 +127,14 @@ flip_aug                  = False
 # Use `clean_caption` option to clean such as duplicate tags, `women` to `girl`, etc
 clean_caption             = False
 # Use the `recursive` option to process subfolders as well
-recursive                 = True
+recursive                 = False
 skip_existing             = True
 
 metadata_config = {
     "_train_data_dir": train_data_dir,
     "_out_json": metadata_json,
     "recursive": recursive,
-    "full_path": recursive,
+    "full_path": True,
     "clean_caption": clean_caption
 }
 
@@ -146,7 +144,7 @@ bucketing_config = {
     "_out_json": bucketing_json,
     "_model_name_or_path": model_path,
     "recursive": recursive,
-    "full_path": recursive,
+    "full_path": True,
     "flip_aug": flip_aug,
     "batch_size": batch_size,
     "max_data_loader_n_workers": max_data_loader_n_workers,
