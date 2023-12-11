@@ -590,7 +590,7 @@ def train(args):
                 optimizer.step()
                 lr_scheduler.step()
                 optimizer.zero_grad(set_to_none=True)
-            
+
             accelerator.wait_for_everyone()
             # Checks if the accelerator has performed an optimization step behind the scenes
             if accelerator.sync_gradients:
@@ -612,7 +612,6 @@ def train(args):
 
                 # 指定ステップごとにモデルを保存
                 if args.save_every_n_steps is not None and global_step % args.save_every_n_steps == 0:
-                    accelerator.wait_for_everyone()
                     if accelerator.is_main_process:
                         src_path = src_stable_diffusion_ckpt if save_stable_diffusion_format else src_diffusers_model_path
                         sdxl_train_util.save_sd_model_on_epoch_end_or_stepwise(
@@ -633,6 +632,7 @@ def train(args):
                             logit_scale,
                             ckpt_info,
                         )
+                    accelerator.wait_for_everyone()
 
             current_loss = loss.detach().item()  # 平均なのでbatch sizeは関係ないはず
             if args.logging_dir is not None:
@@ -679,6 +679,7 @@ def train(args):
                     logit_scale,
                     ckpt_info,
                 )
+            accelerator.wait_for_everyone()
 
         sdxl_train_util.sample_images(
             accelerator,
