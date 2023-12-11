@@ -10,7 +10,7 @@ json_dir = os.path.join(root_dir, "json")
 config_dir = os.path.join(root_dir, "fine_tune/config")
 output_dir = os.path.join(root_dir, "fine_tune/output")
 model_path = os.path.join(root_dir, "pretrained_model/sd_xl_base_1.0.safetensors")
-vae_path = None
+vae_path = "vae/sdxl_vae.safetensors"
 
 
 # This configuration is designed for `one concept` training. Refer to this [guide](https://rentry.org/kohyaminiguide#b-multi-concept-training) for multi-concept training.
@@ -236,7 +236,7 @@ gradient_accumulation_steps = 8
 mixed_precision             = "bf16"  # ["no","fp16","bf16"]
 seed                        = -1
 ### Save Output Config
-save_precision              = "float"  # ["float", "fp16", "bf16"]
+save_precision              = "bf16"  # ["float", "fp16", "bf16"]
 save_n_type                 = "save_every_n_epochs"  # ["save_every_n_epochs", "save_every_n_steps", "save_n_epoch_ratio"]
 save_n_type_value           = 1
 save_optimizer_state        = True
