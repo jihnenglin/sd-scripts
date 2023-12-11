@@ -590,7 +590,8 @@ def train(args):
                 optimizer.step()
                 lr_scheduler.step()
                 optimizer.zero_grad(set_to_none=True)
-
+            
+            accelerator.wait_for_everyone()
             # Checks if the accelerator has performed an optimization step behind the scenes
             if accelerator.sync_gradients:
                 progress_bar.update(1)
@@ -607,6 +608,7 @@ def train(args):
                     [text_encoder1, text_encoder2],
                     unet,
                 )
+                accelerator.wait_for_everyone()
 
                 # 指定ステップごとにモデルを保存
                 if args.save_every_n_steps is not None and global_step % args.save_every_n_steps == 0:
@@ -652,7 +654,7 @@ def train(args):
 
         if args.logging_dir is not None:
             logs = {"loss/epoch": loss_recorder.moving_average}
-            accelerator.log(logs, step=epoch + 1)
+            accelerator.log(logs, step=global_step)
 
         accelerator.wait_for_everyone()
 
@@ -689,6 +691,7 @@ def train(args):
             [text_encoder1, text_encoder2],
             unet,
         )
+        accelerator.wait_for_everyone()
 
     is_main_process = accelerator.is_main_process
     # if is_main_process:
