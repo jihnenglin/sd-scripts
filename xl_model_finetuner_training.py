@@ -211,8 +211,6 @@ input("Press the Enter key to continue: ")
 ## Training Config
 import random
 
-json_dir = os.path.join(root_dir, "json")
-
 ### Project Config
 project_name            = "sdxl_finetune"
 # Get your `wandb_api_key` [here](https://wandb.ai/settings) to logs with wandb.
