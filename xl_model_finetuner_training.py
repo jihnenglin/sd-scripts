@@ -306,6 +306,7 @@ train_config = {
         "gradient_checkpointing"        : gradient_checkpointing,
         "gradient_accumulation_steps"   : gradient_accumulation_steps,
         "mixed_precision"               : mixed_precision,
+        "ddp_timeout"                   : 999999,
     },
     "logging_arguments": {
         "log_with"          : "wandb" if wandb_api_key else "tensorboard",
