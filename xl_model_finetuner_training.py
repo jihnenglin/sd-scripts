@@ -10,7 +10,7 @@ json_dir = os.path.join(root_dir, "json")
 config_dir = os.path.join(root_dir, "fine_tune/config")
 output_dir = os.path.join(root_dir, "fine_tune/output")
 model_path = os.path.join(root_dir, "pretrained_model/sd_xl_base_1.0.safetensors")
-vae_path = "vae/sdxl_vae.safetensors"
+vae_path = os.path.join(root_dir, "vae/sdxl_vae.safetensors")
 
 
 # This configuration is designed for `one concept` training. Refer to this [guide](https://rentry.org/kohyaminiguide#b-multi-concept-training) for multi-concept training.
@@ -217,7 +217,6 @@ json_dir = os.path.join(root_dir, "json")
 project_name            = "sdxl_finetune"
 # Get your `wandb_api_key` [here](https://wandb.ai/settings) to logs with wandb.
 wandb_api_key           = ""
-in_json                 = os.path.join(json_dir, "meta_lat.json")
 ### SDXL Config
 gradient_checkpointing  = True
 no_half_vae             = True
