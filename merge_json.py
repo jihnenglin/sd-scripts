@@ -1,5 +1,7 @@
 import json
 
+# Make json file from parallel latent caching
+
 NUM_OF_DEVICES = 4
 
 json_path = "~/sd-train/json/meta_lat.json"

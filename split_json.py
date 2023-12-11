@@ -1,5 +1,6 @@
-import os
 import json
+
+# Prepare json files for parallel latent caching
 
 NUM_OF_DEVICES = 4
 

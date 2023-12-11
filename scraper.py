@@ -44,6 +44,7 @@ else:
 
 if booru == "Danbooru":
     url = "https://danbooru.donmai.us/posts?tags={}".format(tags)
+    # To download a single post
     #url = "https://danbooru.donmai.us/posts/"
 elif booru == "Gelbooru":
     url = "https://gelbooru.com/index.php?page=post&s=list&tags={}".format(tags)
