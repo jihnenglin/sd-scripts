@@ -118,15 +118,15 @@ optimizer_args = "[ \"scale_parameter=False\", \"relative_step=False\", \"warmup
 # Different `optimizer_type` and `network_category` for some condition requires different learning rate. It's recommended to set `text_encoder_lr = 1/2 * unet_lr`
 learning_rate = 2e-6
 max_grad_norm = 0.0  # default = 1.0; 0.0 for no clipping. It is recommended to be set to 0.0 when using AdaFactor with fixed learning rate
-train_text_encoder = False
+train_text_encoder = True
 # CLIP ViT-L
 learning_rate_te1 = 2e-6
 # OpenCLIP ViT-bigG
 learning_rate_te2 = 2e-6
 ### LR Scheduler Config
 # `lr_scheduler` provides several methods to adjust the learning rate based on the number of epochs.
-lr_scheduler = "constant_with_warmup"  # ["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"]
-lr_warmup_steps = 100
+lr_scheduler = "cosine"  # ["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"]
+lr_warmup_steps = 400
 # Specify `lr_scheduler_num` with `num_cycles` value for `cosine_with_restarts` or `power` value for `polynomial`
 lr_scheduler_num = 0
 
@@ -234,7 +234,7 @@ gradient_accumulation_steps = 8
 mixed_precision             = "bf16"  # ["no","fp16","bf16"]
 seed                        = -1
 ### Save Output Config
-save_precision              = "bf16"  # ["float", "fp16", "bf16"]
+save_precision              = "float"  # ["float", "fp16", "bf16"]
 save_n_type                 = "save_every_n_epochs"  # ["save_every_n_epochs", "save_every_n_steps", "save_n_epoch_ratio"]
 save_n_type_value           = 1
 save_optimizer_state        = True
