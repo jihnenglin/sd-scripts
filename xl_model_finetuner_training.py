@@ -173,6 +173,7 @@ input("Press the Enter key to continue: ")
 
 ### Resume With Optimizer State
 optimizer_state_path      = ""
+#optimizer_state_path      = os.path.join(output_dir, "sdxl_finetune-state")
 ### Noise Control
 noise_control_type        = "multires_noise" #@param ["none", "noise_offset", "multires_noise"]
 #### a. Noise Offset
