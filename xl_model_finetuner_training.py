@@ -175,7 +175,7 @@ input("Press the Enter key to continue: ")
 optimizer_state_path      = ""
 #optimizer_state_path      = os.path.join(output_dir, "sdxl_finetune-state")
 ### Noise Control
-noise_control_type        = "multires_noise" #@param ["none", "noise_offset", "multires_noise"]
+noise_control_type        = "multires_noise" # ["none", "noise_offset", "multires_noise"]
 #### a. Noise Offset
 # Control and easily generating darker or light images by offset the noise when fine-tuning the model. Recommended value: `0.1`. Read [Diffusion With Offset Noise](https://www.crosslabs.org//blog/diffusion-with-offset-noise)
 noise_offset_num          = 0.1
