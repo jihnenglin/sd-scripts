@@ -1722,7 +1722,6 @@ class ControlNetDataset(BaseDataset):
                 subset.caption_extension,
                 subset.num_repeats,
                 subset.shuffle_caption,
-                subset.caption_separator,
                 subset.keep_tokens,
                 subset.color_aug,
                 subset.flip_aug,
@@ -3838,7 +3837,7 @@ def prepare_accelerator(args: argparse.Namespace):
             if args.wandb_api_key is not None:
                 wandb.login(key=args.wandb_api_key)
 
-    
+
     kwargs_handlers = (
         InitProcessGroupKwargs(timeout=datetime.timedelta(minutes=args.ddp_timeout)) if args.ddp_timeout else None,
         DistributedDataParallelKwargs(gradient_as_bucket_view=args.gradient_as_bucket_view, static_graph=args.static_graph)
