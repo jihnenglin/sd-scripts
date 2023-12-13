@@ -19,7 +19,7 @@ from typing import (
     Tuple,
     Union,
 )
-from accelerate import Accelerator, InitProcessGroupKwargs, DistributedDataParallelKwargs
+from accelerate import Accelerator, InitProcessGroupKwargs
 import gc
 import glob
 import math
@@ -2900,12 +2900,6 @@ def add_training_arguments(parser: argparse.ArgumentParser, support_dreambooth: 
         help="DDP timeout (min, None for default of accelerate) / DDPのタイムアウト（分、Noneでaccelerateのデフォルト）",
     )
     parser.add_argument(
-        "--gradient_as_bucket_view", action="store_true", help="enable gradient_as_bucket_view for DDP",
-    )
-    parser.add_argument(
-        "--static_graph", action="store_true", help="enable static_graph for DDP",
-    )
-    parser.add_argument(
         "--clip_skip",
         type=int,
         default=None,
@@ -3867,10 +3861,8 @@ def prepare_accelerator(args: argparse.Namespace):
                 wandb.login(key=args.wandb_api_key)
 
     kwargs_handlers = (
-        InitProcessGroupKwargs(timeout=datetime.timedelta(minutes=args.ddp_timeout)) if args.ddp_timeout else None,
-        DistributedDataParallelKwargs(gradient_as_bucket_view=args.gradient_as_bucket_view, static_graph=args.static_graph)
+        None if args.ddp_timeout is None else [InitProcessGroupKwargs(timeout=datetime.timedelta(minutes=args.ddp_timeout))]
     )
-    kwargs_handlers = list(filter(lambda x: x is not None, kwargs_handlers))
     accelerator = Accelerator(
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         mixed_precision=args.mixed_precision,
