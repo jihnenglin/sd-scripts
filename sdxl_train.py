@@ -398,6 +398,9 @@ def train(args):
     if train_unet:
         unet = accelerator.prepare(unet)
     if train_text_encoder1:
+        # freeze last layer and final_layer_norm in te1 since we use the output of the penultimate layer
+        text_encoder1.text_model.encoder.layers[-1].requires_grad_(False)
+        text_encoder1.text_model.final_layer_norm.requires_grad_(False)
         text_encoder1 = accelerator.prepare(text_encoder1)
     if train_text_encoder2:
         text_encoder2 = accelerator.prepare(text_encoder2)
@@ -460,7 +463,9 @@ def train(args):
 
     # For --sample_at_first
     sdxl_train_util.sample_images(
-        accelerator, args, 0, global_step, accelerator.device, vae, [tokenizer1, tokenizer2], [text_encoder1, text_encoder2], unet
+        accelerator, args, 0, global_step, accelerator.device, vae, [tokenizer1, tokenizer2],
+        [accelerator.unwrap_model(text_encoder1), accelerator.unwrap_model(text_encoder2)],
+        accelerator.unwrap_model(unet)
     )
 
     loss_recorder = train_util.LossRecorder()
@@ -608,8 +613,8 @@ def train(args):
                     accelerator.device,
                     vae,
                     [tokenizer1, tokenizer2],
-                    [text_encoder1, text_encoder2],
-                    unet,
+                    [accelerator.unwrap_model(text_encoder1), accelerator.unwrap_model(text_encoder2)],
+                    accelerator.unwrap_model(unet),
                 )
 
                 # 指定ステップごとにモデルを保存
@@ -690,8 +695,8 @@ def train(args):
             accelerator.device,
             vae,
             [tokenizer1, tokenizer2],
-            [text_encoder1, text_encoder2],
-            unet,
+            [accelerator.unwrap_model(text_encoder1), accelerator.unwrap_model(text_encoder2)],
+            accelerator.unwrap_model(unet),
         )
 
     is_main_process = accelerator.is_main_process
