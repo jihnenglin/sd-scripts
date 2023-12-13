@@ -465,7 +465,7 @@ def train(args):
     sdxl_train_util.sample_images(
         accelerator, args, 0, global_step, accelerator.device, vae, [tokenizer1, tokenizer2],
         [accelerator.unwrap_model(text_encoder1), accelerator.unwrap_model(text_encoder2)],
-        accelerator.unwrap_model(unet)
+        accelerator.unwrap_model(unet),
     )
 
     loss_recorder = train_util.LossRecorder()
