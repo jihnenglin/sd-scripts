@@ -464,8 +464,8 @@ def train(args):
     # For --sample_at_first
     sdxl_train_util.sample_images(
         accelerator, args, 0, global_step, accelerator.device, vae, [tokenizer1, tokenizer2],
-        [text_encoder1.module, text_encoder2.module],
-        unet.module
+        [accelerator.unwrap_model(text_encoder1), accelerator.unwrap_model(text_encoder2)],
+        accelerator.unwrap_model(unet)
     )
 
     loss_recorder = train_util.LossRecorder()
@@ -613,8 +613,8 @@ def train(args):
                     accelerator.device,
                     vae,
                     [tokenizer1, tokenizer2],
-                    [text_encoder1.module, text_encoder2.module],
-                    unet.module,
+                    [accelerator.unwrap_model(text_encoder1), accelerator.unwrap_model(text_encoder2)],
+                    accelerator.unwrap_model(unet),
                 )
 
                 # 指定ステップごとにモデルを保存
@@ -695,8 +695,8 @@ def train(args):
             accelerator.device,
             vae,
             [tokenizer1, tokenizer2],
-            [text_encoder1.module, text_encoder2.module],
-            unet.module,
+            [accelerator.unwrap_model(text_encoder1), accelerator.unwrap_model(text_encoder2)],
+            accelerator.unwrap_model(unet),
         )
 
     is_main_process = accelerator.is_main_process
