@@ -251,6 +251,7 @@ if prompt_from_caption != "none":
     custom_prompt           = ""
 num_prompt                  = 2
 sample_interval             = 100
+sample_at_first             = True
 logging_dir                 = os.path.join(root_dir, "fine_tune/logs")
 
 os.chdir(repo_dir)
@@ -318,6 +319,7 @@ train_config = {
         "sample_every_n_steps"    : sample_interval,
         "sample_every_n_epochs"   : None,
         "sample_sampler"          : sampler,
+        "sample_at_first"         : sample_at_first,
     },
     "saving_arguments": {
         "save_model_as": "safetensors"
