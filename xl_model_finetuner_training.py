@@ -237,7 +237,7 @@ seed                        = -1
 save_precision              = "float"  # ["float", "fp16", "bf16"]
 save_n_type                 = "save_every_n_epochs"  # ["save_every_n_epochs", "save_every_n_steps", "save_n_epoch_ratio"]
 save_n_type_value           = 1
-save_optimizer_state        = True
+save_optimizer_state        = False
 save_model_as               = "safetensors" # ["ckpt", "safetensors", "diffusers", "diffusers_safetensors"]
 ### Sample Prompt Config
 enable_sample               = True
