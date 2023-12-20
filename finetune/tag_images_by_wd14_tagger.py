@@ -195,7 +195,8 @@ def main(args):
             for i, p in enumerate(prob[4:]):
                 if i < len(general_tags) and p >= args.general_threshold:
                     tag_name = general_tags[i]
-                    if args.remove_underscore and len(tag_name) > 3:  # ignore emoji tags like >_< and ^_^
+                    #if args.remove_underscore and len(tag_name) > 3:  # ignore emoji tags like >_< and ^_^
+                    if args.remove_underscore:
                         tag_name = tag_name.replace("_", " ")
 
                     if tag_name not in undesired_tags:
@@ -204,7 +205,8 @@ def main(args):
                         combined_tags.append(tag_name)
                 elif i >= len(general_tags) and p >= args.character_threshold:
                     tag_name = character_tags[i - len(general_tags)]
-                    if args.remove_underscore and len(tag_name) > 3:
+                    #if args.remove_underscore and len(tag_name) > 3:
+                    if args.remove_underscore:
                         tag_name = tag_name.replace("_", " ")
 
                     if tag_name not in undesired_tags:
