@@ -57,12 +57,12 @@ class ImageLoadingDataset(torch.utils.data.Dataset):
 
         try:
             with open(tag_path, "r") as f:
-                tags = f.read()
+                tag_content = f.read()
         except Exception as e:
             print(f"Could not load tag path: {tag_path}, error: {e}")
             return None
 
-        return (image, img_path, tag_path, tags)
+        return (image, img_path, tag_path, tag_content)
 
 image_paths: list[str] = [str(p) for p in train_util.glob_images_pathlib(train_data_dir_path, recursive)]
 print(f"found {len(image_paths)} images.")
@@ -179,9 +179,10 @@ model.eval()
 
 
 for data_entry in tqdm(data, smoothing=0.0):
-    images, img_paths, tag_paths, tags = data_entry
-    for i in range(len(tags)):
-        tags[i] = tags[i].split(", ")
+    images, img_paths, tag_paths, tag_content = data_entry
+    tags = []
+    for i in range(len(tag_content)):
+        tags.append(tag_content[i].split(", "))
 
     scores = None
     for i in range(len(img_paths)):
