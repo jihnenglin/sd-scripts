@@ -241,7 +241,7 @@ def main(args):
                     tag_text = caption_separator.join(existing_tags + new_tags)
 
             with open(caption_file, "wt", encoding="utf-8") as f:
-                f.write(tag_text + "\n")
+                f.write(tag_text)
                 if args.debug:
                     print(f"\n{image_path}:\n  Character tags: {character_tag_text}\n  General tags: {general_tag_text}")
 
