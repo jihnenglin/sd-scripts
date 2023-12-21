@@ -126,7 +126,7 @@ learning_rate_te2 = 2e-6
 ### LR Scheduler Config
 # `lr_scheduler` provides several methods to adjust the learning rate based on the number of epochs.
 lr_scheduler = "cosine"  # ["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"]
-lr_warmup_steps = 100
+lr_warmup_steps = 400
 # Specify `lr_scheduler_num` with `num_cycles` value for `cosine_with_restarts` or `power` value for `polynomial`
 lr_scheduler_num = 0
 
