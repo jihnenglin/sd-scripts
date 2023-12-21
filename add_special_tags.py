@@ -55,14 +55,7 @@ class ImageLoadingDataset(torch.utils.data.Dataset):
         dot_idx = img_path.rfind(".")
         tag_path = f"{img_path[:dot_idx]}.txt"
 
-        try:
-            with open(tag_path, "r") as f:
-                tags = f.read().split(", ")
-        except Exception as e:
-            print(f"Could not load tag path: {tag_path}, error: {e}")
-            return None
-
-        return (image, img_path, tag_path, tags)
+        return (image, img_path, tag_path)
 
 image_paths: list[str] = [str(p) for p in train_util.glob_images_pathlib(train_data_dir_path, recursive)]
 print(f"found {len(image_paths)} images.")
@@ -179,14 +172,21 @@ model.eval()
 
 
 for data_entry in tqdm(data, smoothing=0.0):
-    images, img_paths, tag_paths, tags = data_entry
+    images, img_paths, tag_paths= data_entry
 
     scores = None
     for i in range(len(img_paths)):
+        try:
+            with open(tag_paths[i], "r") as f:
+                tags = f.read().split(", ")
+        except Exception as e:
+            print(f"Could not load tag path: {tag_paths[i]}, error: {e}")
+            quit()
 
         with open(tag_paths[i], "a") as f:
             try:
                 # For scrapped images
+
                 if tags[i][-3] in aesthetic_tag_names:
                     if skip_existing:
                         continue
@@ -218,6 +218,7 @@ for data_entry in tqdm(data, smoothing=0.0):
 
                     f.write(f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
 
+
                 # For auto tagged images
                 """
                 if tags[i][-1] in aesthetic_tag_names:
@@ -227,9 +228,9 @@ for data_entry in tqdm(data, smoothing=0.0):
                     if scores is None:
                         scores = aesthetic_score_inference(images, device, model2, model)
                     aesthetic_tag = get_tag_name(scores[i], aesthetic_thresholds, aesthetic_tag_names)
-                    #print(img_paths[i], scores[i], f"{aesthetic_tag}, ")
+                    #print(img_paths[i], scores[i], f", {aesthetic_tag}")
 
-                    tags[i].extend([aesthetic_tag, ""])
+                    tags[i].append(aesthetic_tag)
                     f.seek(0)
                     f.truncate()
                     f.write(", ".join(tags[i]))
@@ -237,9 +238,9 @@ for data_entry in tqdm(data, smoothing=0.0):
                     if scores is None:
                         scores = aesthetic_score_inference(images, device, model2, model)
                     aesthetic_tag = get_tag_name(scores[i], aesthetic_thresholds, aesthetic_tag_names)
-                    #print(img_paths[i], scores[i], f"{aesthetic_tag}, ")
+                    #print(img_paths[i], scores[i], f", {aesthetic_tag}")
 
-                    f.write(f"{aesthetic_tag}, ")
+                    f.write(f", {aesthetic_tag}")
                 """
 
             except IndexError as e:
