@@ -20,7 +20,7 @@ train_data_dir_path = Path(os.path.join(root_dir, "train_data"))
 recursive = False
 batch_size = 8
 max_data_loader_n_workers = 32
-skip_existing = False
+skip_existing = True
 
 rating_tag_map = {"g": None, "s": "slightly nsfw", "q": "fairly nsfw", "e": "very nsfw"}
 quality_thresholds = [150, 100, 75, 0, -4]
