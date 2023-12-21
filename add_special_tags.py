@@ -186,7 +186,7 @@ for data_entry in tqdm(data, smoothing=0.0):
         with open(tag_paths[i], "a") as f:
             try:
                 # For scrapped images
-
+                """
                 if tags[i][-3] in aesthetic_tag_names:
                     if skip_existing:
                         continue
@@ -217,13 +217,15 @@ for data_entry in tqdm(data, smoothing=0.0):
                     #print(img_paths[i], quality_score, scores[i], f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
 
                     f.write(f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
-
+                """
 
                 # For auto tagged images
-                """
+
                 if tags[i][-1] in aesthetic_tag_names:
                     if skip_existing:
                         continue
+
+                    tags[i] = tags[i][:-1]
 
                     if scores is None:
                         scores = aesthetic_score_inference(images, device, model2, model)
@@ -241,7 +243,7 @@ for data_entry in tqdm(data, smoothing=0.0):
                     #print(img_paths[i], scores[i], f", {aesthetic_tag}")
 
                     f.write(f", {aesthetic_tag}")
-                """
+
 
             except IndexError as e:
                 print(f"Corrupted tag file: {tag_paths[i]}, error: {e}")
