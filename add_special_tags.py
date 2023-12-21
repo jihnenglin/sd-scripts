@@ -180,7 +180,7 @@ model.eval()
 
 for data_entry in tqdm(data, smoothing=0.0):
     images, img_paths, tag_paths, tags = data_entry
-    for i in tags:
+    for i in range(len(tags)):
         tags[i] = tags[i].split(", ")
 
     scores = None
