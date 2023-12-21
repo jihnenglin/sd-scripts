@@ -16,7 +16,7 @@ import library.train_util as train_util
 IMAGE_SIZE = 448
 
 # wd-v1-4-swinv2-tagger-v2 / wd-v1-4-vit-tagger / wd-v1-4-vit-tagger-v2/ wd-v1-4-convnext-tagger / wd-v1-4-convnext-tagger-v2
-DEFAULT_WD14_TAGGER_REPO = "SmilingWolf/wd-v1-4-convnext-tagger-v2"
+DEFAULT_WD14_TAGGER_REPO = "SmilingWolf/wd-v1-4-moat-tagger-v2"
 FILES = ["keras_metadata.pb", "saved_model.pb", "selected_tags.csv"]
 FILES_ONNX = ["model.onnx"]
 SUB_DIR = "variables"
@@ -179,19 +179,24 @@ def main(args):
         for (image_path, _), prob in zip(path_imgs, probs):
             # 最初の4つはratingなので無視する
             # # First 4 labels are actually ratings: pick one with argmax
-            # ratings_names = label_names[:4]
-            # rating_index = ratings_names["probs"].argmax()
-            # found_rating = ratings_names[rating_index: rating_index + 1][["name", "probs"]]
+            if args.rating_tag:
+                ratings_names = [None, "slightly nsfw", "fairly nsfw", "very nsfw"]
+                rating_index = prob[:4].argmax()
+                rating_tag_name = ratings_names[rating_index]
 
             # それ以降はタグなのでconfidenceがthresholdより高いものを追加する
             # Everything else is tags: pick any where prediction confidence > threshold
             combined_tags = []
+            if args.rating_tag and rating_tag_name is not None:
+                combined_tags.append(rating_tag_name)
+                tag_freq[rating_tag_name] = tag_freq.get(rating_tag_name, 0) + 1
             general_tag_text = ""
             character_tag_text = ""
             for i, p in enumerate(prob[4:]):
                 if i < len(general_tags) and p >= args.general_threshold:
                     tag_name = general_tags[i]
-                    if args.remove_underscore and len(tag_name) > 3:  # ignore emoji tags like >_< and ^_^
+                    #if args.remove_underscore and len(tag_name) > 3:  # ignore emoji tags like >_< and ^_^
+                    if args.remove_underscore:
                         tag_name = tag_name.replace("_", " ")
 
                     if tag_name not in undesired_tags:
@@ -200,7 +205,8 @@ def main(args):
                         combined_tags.append(tag_name)
                 elif i >= len(general_tags) and p >= args.character_threshold:
                     tag_name = character_tags[i - len(general_tags)]
-                    if args.remove_underscore and len(tag_name) > 3:
+                    #if args.remove_underscore and len(tag_name) > 3:
+                    if args.remove_underscore:
                         tag_name = tag_name.replace("_", " ")
 
                     if tag_name not in undesired_tags:
@@ -235,7 +241,7 @@ def main(args):
                     tag_text = caption_separator.join(existing_tags + new_tags)
 
             with open(caption_file, "wt", encoding="utf-8") as f:
-                f.write(tag_text + "\n")
+                f.write(tag_text)
                 if args.debug:
                     print(f"\n{image_path}:\n  Character tags: {character_tag_text}\n  General tags: {general_tag_text}")
 
@@ -358,6 +364,7 @@ def setup_parser() -> argparse.ArgumentParser:
         default=", ",
         help="Separator for captions, include space if needed / キャプションの区切り文字、必要ならスペースを含めてください",
     )
+    parser.add_argument("--rating_tag", action="store_true", help="Add rating tag")
 
     return parser
 
