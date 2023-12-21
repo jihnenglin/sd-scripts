@@ -19,7 +19,7 @@ def pre_process_tags(directory):
 
             contents = html.unescape(contents)
             contents = contents.replace("_", " ")
-            contents = ", ".join(contents.split("\n"))
+            contents = ", ".join(contents.split("\n")[:-1])
 
             with open(new_path, "w") as f:
                 f.write(contents)

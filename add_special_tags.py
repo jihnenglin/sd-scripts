@@ -189,24 +189,24 @@ for data_entry in tqdm(data, smoothing=0.0):
         try:
             # For scrapped images
             """
-            if tags[i][-3] in aesthetic_tag_names:
+            if tags[i][-2] in aesthetic_tag_names:
                 if skip_existing:
                     continue
-                if tags[i][-5] in rating_tag_names:
-                    tags[i] = tags[i][:-5]
-                else:
+                if tags[i][-4] in rating_tag_names:
                     tags[i] = tags[i][:-4]
+                else:
+                    tags[i] = tags[i][:-3]
 
                 rating_tag, quality_tag, year_tag, quality_score = get_tags(img_paths[i])
 
                 if scores is None:
                     scores = aesthetic_score_inference(images, device, model2, model)
                 aesthetic_tag = get_tag_name(scores[i], aesthetic_thresholds, aesthetic_tag_names)
-                #print(img_paths[i], quality_score, scores[i], f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
+                #print(img_paths[i], quality_score, scores[i], f", {rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}")
 
                 if rating_tag:
                     tags[i].append(rating_tag)
-                tags[i].extend([quality_tag, aesthetic_tag, year_tag, ""])
+                tags[i].extend([quality_tag, aesthetic_tag, year_tag])
 
                 with open(tag_paths[i], "w") as f:
                     f.write(", ".join(tags[i]))
@@ -216,10 +216,10 @@ for data_entry in tqdm(data, smoothing=0.0):
                 if scores is None:
                     scores = aesthetic_score_inference(images, device, model2, model)
                 aesthetic_tag = get_tag_name(scores[i], aesthetic_thresholds, aesthetic_tag_names)
-                #print(img_paths[i], quality_score, scores[i], f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
+                #print(img_paths[i], quality_score, scores[i], f", {rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}")
 
                 with open(tag_paths[i], "a") as f:
-                    f.write(f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
+                    f.write(f", {rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}")
             """
 
             # For auto tagged images
