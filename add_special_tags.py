@@ -186,71 +186,69 @@ for data_entry in tqdm(data, smoothing=0.0):
 
     scores = None
     for i in range(len(img_paths)):
-
-        with open(tag_paths[i], "a") as f:
-            try:
-                # For scrapped images
-                """
-                if tags[i][-3] in aesthetic_tag_names:
-                    if skip_existing:
-                        continue
-                    if tags[i][-5] in rating_tag_names:
-                        tags[i] = tags[i][:-5]
-                    else:
-                        tags[i] = tags[i][:-4]
-
-                    rating_tag, quality_tag, year_tag, quality_score = get_tags(img_paths[i])
-
-                    if scores is None:
-                        scores = aesthetic_score_inference(images, device, model2, model)
-                    aesthetic_tag = get_tag_name(scores[i], aesthetic_thresholds, aesthetic_tag_names)
-                    #print(img_paths[i], quality_score, scores[i], f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
-
-                    if rating_tag:
-                        tags[i].append(rating_tag)
-                    tags[i].extend([quality_tag, aesthetic_tag, year_tag, ""])
-                    f.seek(0)
-                    f.truncate()
-                    f.write(", ".join(tags[i]))
+        try:
+            # For scrapped images
+            """
+            if tags[i][-3] in aesthetic_tag_names:
+                if skip_existing:
+                    continue
+                if tags[i][-5] in rating_tag_names:
+                    tags[i] = tags[i][:-5]
                 else:
-                    rating_tag, quality_tag, year_tag, quality_score = get_tags(img_paths[i])
+                    tags[i] = tags[i][:-4]
 
-                    if scores is None:
-                        scores = aesthetic_score_inference(images, device, model2, model)
-                    aesthetic_tag = get_tag_name(scores[i], aesthetic_thresholds, aesthetic_tag_names)
-                    #print(img_paths[i], quality_score, scores[i], f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
+                rating_tag, quality_tag, year_tag, quality_score = get_tags(img_paths[i])
 
+                if scores is None:
+                    scores = aesthetic_score_inference(images, device, model2, model)
+                aesthetic_tag = get_tag_name(scores[i], aesthetic_thresholds, aesthetic_tag_names)
+                #print(img_paths[i], quality_score, scores[i], f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
+
+                if rating_tag:
+                    tags[i].append(rating_tag)
+                tags[i].extend([quality_tag, aesthetic_tag, year_tag, ""])
+
+                with open(tag_paths[i], "w") as f:
+                    f.write(", ".join(tags[i]))
+            else:
+                rating_tag, quality_tag, year_tag, quality_score = get_tags(img_paths[i])
+
+                if scores is None:
+                    scores = aesthetic_score_inference(images, device, model2, model)
+                aesthetic_tag = get_tag_name(scores[i], aesthetic_thresholds, aesthetic_tag_names)
+                #print(img_paths[i], quality_score, scores[i], f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
+
+                with open(tag_paths[i], "a") as f:
                     f.write(f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
-                """
+            """
 
-                # For auto tagged images
+            # For auto tagged images
 
-                if tags[i][-1] in aesthetic_tag_names:
-                    if skip_existing:
-                        continue
+            if tags[i][-1] in aesthetic_tag_names:
+                if skip_existing:
+                    continue
+                tags[i] = tags[i][:-1]
 
-                    tags[i] = tags[i][:-1]
+                if scores is None:
+                    scores = aesthetic_score_inference(images, device, model2, model)
+                aesthetic_tag = get_tag_name(scores[i], aesthetic_thresholds, aesthetic_tag_names)
+                #print(img_paths[i], scores[i], f", {aesthetic_tag}")
 
-                    if scores is None:
-                        scores = aesthetic_score_inference(images, device, model2, model)
-                    aesthetic_tag = get_tag_name(scores[i], aesthetic_thresholds, aesthetic_tag_names)
-                    #print(img_paths[i], scores[i], f", {aesthetic_tag}")
-
-                    tags[i].append(aesthetic_tag)
-                    f.seek(0)
-                    f.truncate()
+                tags[i].append(aesthetic_tag)
+                with open(tag_paths[i], "w") as f:
                     f.write(", ".join(tags[i]))
-                else:
-                    if scores is None:
-                        scores = aesthetic_score_inference(images, device, model2, model)
-                    aesthetic_tag = get_tag_name(scores[i], aesthetic_thresholds, aesthetic_tag_names)
-                    #print(img_paths[i], scores[i], f", {aesthetic_tag}")
+            else:
+                if scores is None:
+                    scores = aesthetic_score_inference(images, device, model2, model)
+                aesthetic_tag = get_tag_name(scores[i], aesthetic_thresholds, aesthetic_tag_names)
+                #print(img_paths[i], scores[i], f", {aesthetic_tag}")
 
+                with open(tag_paths[i], "a") as f:
                     f.write(f", {aesthetic_tag}")
 
 
-            except IndexError as e:
-                print(f"Corrupted tag file: {tag_paths[i]}, error: {e}")
-                quit()
+        except IndexError as e:
+            print(f"Corrupted tag file: {tag_paths[i]}, error: {e}")
+            quit()
 
     #input("Press enter to continue")
