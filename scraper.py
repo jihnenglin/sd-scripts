@@ -1,7 +1,32 @@
 ## Scrape Dataset
 import os
-import html
 import subprocess
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--prompt", type=str, default=None, help="Scrape images that satisfy this condition")
+parser.add_argument("--post", type=str, default=None, help="Scrape image post id")
+parser.add_argument("--range", type=str, default=None, help="Index range specifying which files to download.")
+parser.add_argument("--workers", type=int, default=1, help="Number of worker processes")
+parser.add_argument("--overlap", type=int, default=0, help="Overlapping index range")
+parser.add_argument("--write_metadata", action="store_false", help="Write metadata to separate JSON files")
+parser.add_argument("--write-tags", action="store_false", help="Write image tags to separate text files")
+parser.add_argument("--no_skip", action="store_true", help="Do not skip downloads; overwrite existing files")
+args = parser.parse_args()
+
+if args.range:
+    _range = args.range.split("-")
+    start, end = int(_range[0]), int(_range[1])
+    chunk_size = (end - start + 1) // args.workers
+    remainder = (end - start + 1) % args.workers
+    id_chunks = [[i, i + chunk_size - 1] for i in range(start, end - remainder, chunk_size)]
+    id_chunks[-1][-1] += remainder
+    for i in id_chunks:
+        if i[0] - args.overlap < 1:
+            i[0] = 1
+        else:
+            i[0] -= args.overlap
+    print(id_chunks)
 
 root_dir = "~/sd-train"
 scraped_data_dir = os.path.join(root_dir, "scraped_data")
@@ -9,7 +34,6 @@ scraped_data_dir = os.path.join(root_dir, "scraped_data")
 os.chdir(root_dir)
 # Use `gallery-dl` to scrape images from an imageboard site. To specify `prompt(s)`, separate them with commas (e.g., `hito_komoru, touhou`).
 booru = "Danbooru"  # ["Danbooru", "Gelbooru", "Safebooru"]
-prompt = "male_focus,-animated"
 
 # Alternatively, you can provide a `custom_url` instead of using a predefined site.
 custom_url = ""
@@ -19,20 +43,14 @@ sub_folder = ""
 
 user_agent = "gdl/1.24.5"
 
-# You can limit the number of images to download by using the `--range` option followed by the desired range (e.g., `1-200`).
-range = "1-200"
-
-write_metadata = True
-write_tags = True
-no_skip = False
-
 additional_arguments = "--filename /O --no-part"
 
-tags = prompt.split(',')
-tags = '+'.join(tags)
+if args.prompt:
+    tags = args.prompt.split(',')
+    tags = '+'.join(tags)
 
-replacement_dict = {" ": "", "(": "%28", ")": "%29", ":": "%3a"}
-tags = ''.join(replacement_dict.get(c, c) for c in tags)
+    replacement_dict = {" ": "", "(": "%28", ")": "%29", ":": "%3a"}
+    tags = ''.join(replacement_dict.get(c, c) for c in tags)
 
 if sub_folder == "":
     image_dir = scraped_data_dir
@@ -43,9 +61,11 @@ else:
     os.makedirs(image_dir, exist_ok=True)
 
 if booru == "Danbooru":
-    url = "https://danbooru.donmai.us/posts?tags={}".format(tags)
-    # To download a single post
-    #url = "https://danbooru.donmai.us/posts/"
+    if args.prompt:
+        url = "https://danbooru.donmai.us/posts?tags={}".format(tags)
+    elif args.post:
+        # To download a single post
+        url = "https://danbooru.donmai.us/posts/{}".format(args.post)
 elif booru == "Gelbooru":
     url = "https://gelbooru.com/index.php?page=post&s=list&tags={}".format(tags)
 else:
@@ -69,44 +89,20 @@ def scrape(config):
 
     return args
 
-def pre_process_tags(directory):
-    for item in os.listdir(directory):
-        item_path = os.path.join(directory, item)
-        if os.path.isfile(item_path) and item.endswith(".txt"):
-            old_path = item_path
-            new_file_name = os.path.splitext(os.path.splitext(item)[0])[0] + ".txt"
-            new_path = os.path.join(directory, new_file_name)
-
-            os.rename(old_path, new_path)
-
-            with open(new_path, "r") as f:
-                contents = f.read()
-
-            contents = html.unescape(contents)
-            contents = contents.replace("_", " ")
-            contents = ", ".join(contents.split("\n"))
-
-            with open(new_path, "w") as f:
-                f.write(contents)
-
-        elif os.path.isdir(item_path):
-            pre_process_tags(item_path)
-
 get_url_config = {
     "_valid_url" : valid_url,
     "get-urls" : True,
-    "no-skip" : no_skip,
-    "range" : range if range else None,
+    "no-skip" : args.no_skip,
+    "range" : args.range if args.range else None,
     "user-agent" : user_agent
 }
 
 scrape_config = {
     "_valid_url" : valid_url,
     "directory" : image_dir,
-    "no-skip" : no_skip,
-    "write-metadata": write_metadata,
-    "write-tags" : write_tags,
-    "range" : range if range else None,
+    "no-skip" : args.no_skip,
+    "write-metadata": args.write_metadata,
+    "write-tags" : args.write_tags,
     "user-agent" : user_agent
 }
 
@@ -114,9 +110,14 @@ get_url_args = scrape(get_url_config)
 scrape_args = scrape(scrape_config)
 scraper_text = os.path.join(root_dir, "scrape_this.txt")
 
-if write_tags:
-    subprocess.run(f"gallery-dl {scrape_args} {additional_arguments}", shell=True)
-    pre_process_tags(scraped_data_dir)
+if args.write_tags:
+    if not args.range:
+        subprocess.run(f"gallery-dl {scrape_args} {additional_arguments}", shell=True)
+    else:
+        for i in id_chunks:
+            scrape_config["range"] = f"{i[0]}-{i[1]}"
+            scrape_args = scrape(scrape_config)
+            subprocess.Popen(f"nohup gallery-dl {scrape_args} {additional_arguments} &", shell=True)
 else:
     cap = subprocess.run(f"gallery-dl {get_url_args} {additional_arguments}", shell=True, capture_output=True, text=True)
     with open(scraper_text, "w") as f:
