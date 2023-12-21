@@ -55,7 +55,14 @@ class ImageLoadingDataset(torch.utils.data.Dataset):
         dot_idx = img_path.rfind(".")
         tag_path = f"{img_path[:dot_idx]}.txt"
 
-        return (image, img_path, tag_path)
+        try:
+            with open(tag_paths[i], "r") as f:
+                tags = f.read()
+        except Exception as e:
+            print(f"Could not load tag path: {tag_paths[i]}, error: {e}")
+            return None
+
+        return (image, img_path, tag_path, tags)
 
 image_paths: list[str] = [str(p) for p in train_util.glob_images_pathlib(train_data_dir_path, recursive)]
 print(f"found {len(image_paths)} images.")
@@ -172,28 +179,24 @@ model.eval()
 
 
 for data_entry in tqdm(data, smoothing=0.0):
-    images, img_paths, tag_paths= data_entry
+    images, img_paths, tag_paths, tags = data_entry
+    for i in tags:
+        tags[i] = tags[i].split(", ")
 
     scores = None
     for i in range(len(img_paths)):
-        try:
-            with open(tag_paths[i], "r") as f:
-                tags = f.read().split(", ")
-        except Exception as e:
-            print(f"Could not load tag path: {tag_paths[i]}, error: {e}")
-            quit()
 
         with open(tag_paths[i], "a") as f:
             try:
                 # For scrapped images
                 """
-                if tags[-3] in aesthetic_tag_names:
+                if tags[i][-3] in aesthetic_tag_names:
                     if skip_existing:
                         continue
-                    if tags[-5] in rating_tag_names:
-                        tags = tags[:-5]
+                    if tags[i][-5] in rating_tag_names:
+                        tags[i] = tags[i][:-5]
                     else:
-                        tags = tags[:-4]
+                        tags[i] = tags[i][:-4]
 
                     rating_tag, quality_tag, year_tag, quality_score = get_tags(img_paths[i])
 
@@ -203,11 +206,11 @@ for data_entry in tqdm(data, smoothing=0.0):
                     #print(img_paths[i], quality_score, scores[i], f"{rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}, ")
 
                     if rating_tag:
-                        tags.append(rating_tag)
-                    tags.extend([quality_tag, aesthetic_tag, year_tag, ""])
+                        tags[i].append(rating_tag)
+                    tags[i].extend([quality_tag, aesthetic_tag, year_tag, ""])
                     f.seek(0)
                     f.truncate()
-                    f.write(", ".join(tags))
+                    f.write(", ".join(tags[i]))
                 else:
                     rating_tag, quality_tag, year_tag, quality_score = get_tags(img_paths[i])
 
@@ -221,21 +224,21 @@ for data_entry in tqdm(data, smoothing=0.0):
 
                 # For auto tagged images
 
-                if tags[-1] in aesthetic_tag_names:
+                if tags[i][-1] in aesthetic_tag_names:
                     if skip_existing:
                         continue
 
-                    tags = tags[:-1]
+                    tags[i] = tags[i][:-1]
 
                     if scores is None:
                         scores = aesthetic_score_inference(images, device, model2, model)
                     aesthetic_tag = get_tag_name(scores[i], aesthetic_thresholds, aesthetic_tag_names)
                     #print(img_paths[i], scores[i], f", {aesthetic_tag}")
 
-                    tags.append(aesthetic_tag)
+                    tags[i].append(aesthetic_tag)
                     f.seek(0)
                     f.truncate()
-                    f.write(", ".join(tags))
+                    f.write(", ".join(tags[i]))
                 else:
                     if scores is None:
                         scores = aesthetic_score_inference(images, device, model2, model)
