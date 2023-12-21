@@ -56,10 +56,10 @@ class ImageLoadingDataset(torch.utils.data.Dataset):
         tag_path = f"{img_path[:dot_idx]}.txt"
 
         try:
-            with open(tag_paths[i], "r") as f:
+            with open(tag_path, "r") as f:
                 tags = f.read()
         except Exception as e:
-            print(f"Could not load tag path: {tag_paths[i]}, error: {e}")
+            print(f"Could not load tag path: {tag_path}, error: {e}")
             return None
 
         return (image, img_path, tag_path, tags)
