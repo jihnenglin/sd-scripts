@@ -397,13 +397,13 @@ def train(args):
     # acceleratorがなんかよろしくやってくれるらしい
     if train_unet:
         unet = accelerator.prepare(unet)
-        (unet,) = train_util.transform_models_if_DDP([unet])
     if train_text_encoder1:
+        # freeze last layer and final_layer_norm in te1 since we use the output of the penultimate layer
+        text_encoder1.text_model.encoder.layers[-1].requires_grad_(False)
+        text_encoder1.text_model.final_layer_norm.requires_grad_(False)
         text_encoder1 = accelerator.prepare(text_encoder1)
-        (text_encoder1,) = train_util.transform_models_if_DDP([text_encoder1])
     if train_text_encoder2:
         text_encoder2 = accelerator.prepare(text_encoder2)
-        (text_encoder2,) = train_util.transform_models_if_DDP([text_encoder2])
 
     optimizer, train_dataloader, lr_scheduler = accelerator.prepare(optimizer, train_dataloader, lr_scheduler)
 
@@ -461,6 +461,11 @@ def train(args):
             init_kwargs = toml.load(args.log_tracker_config)
         accelerator.init_trackers("finetuning" if args.log_tracker_name is None else args.log_tracker_name, init_kwargs=init_kwargs)
 
+    # For --sample_at_first
+    sdxl_train_util.sample_images(
+        accelerator, args, 0, global_step, accelerator.device, vae, [tokenizer1, tokenizer2], [text_encoder1, text_encoder2], unet
+    )
+
     loss_recorder = train_util.LossRecorder()
     for epoch in range(num_train_epochs):
         accelerator.print(f"\nepoch {epoch+1}/{num_train_epochs}")
@@ -482,7 +487,7 @@ def train(args):
                         # NaNが含まれていれば警告を表示し0に置き換える
                         if torch.any(torch.isnan(latents)):
                             accelerator.print("NaN found in latents, replacing with zeros")
-                            latents = torch.where(torch.isnan(latents), torch.zeros_like(latents), latents)
+                            latents = torch.nan_to_num(latents, 0, out=latents)
                 latents = latents * sdxl_model_util.VAE_SCALE_FACTOR
 
                 if "text_encoder_outputs1_list" not in batch or batch["text_encoder_outputs1_list"] is None:
@@ -503,6 +508,7 @@ def train(args):
                         # else:
                         input_ids1 = input_ids1.to(accelerator.device)
                         input_ids2 = input_ids2.to(accelerator.device)
+                        # unwrap_model is fine for models not wrapped by accelerator
                         encoder_hidden_states1, encoder_hidden_states2, pool2 = train_util.get_hidden_states_sdxl(
                             args.max_token_length,
                             input_ids1,
@@ -512,6 +518,7 @@ def train(args):
                             text_encoder1,
                             text_encoder2,
                             None if not args.full_fp16 else weight_dtype,
+                            accelerator=accelerator,
                         )
                 else:
                     encoder_hidden_states1 = batch["text_encoder_outputs1_list"].to(accelerator.device).to(weight_dtype)
@@ -591,7 +598,6 @@ def train(args):
                 lr_scheduler.step()
                 optimizer.zero_grad(set_to_none=True)
 
-            accelerator.wait_for_everyone()
             # Checks if the accelerator has performed an optimization step behind the scenes
             if accelerator.sync_gradients:
                 progress_bar.update(1)
@@ -608,10 +614,10 @@ def train(args):
                     [text_encoder1, text_encoder2],
                     unet,
                 )
-                accelerator.wait_for_everyone()
 
                 # 指定ステップごとにモデルを保存
                 if args.save_every_n_steps is not None and global_step % args.save_every_n_steps == 0:
+                    accelerator.wait_for_everyone()
                     if accelerator.is_main_process:
                         src_path = src_stable_diffusion_ckpt if save_stable_diffusion_format else src_diffusers_model_path
                         sdxl_train_util.save_sd_model_on_epoch_end_or_stepwise(
@@ -632,7 +638,6 @@ def train(args):
                             logit_scale,
                             ckpt_info,
                         )
-                    accelerator.wait_for_everyone()
 
             current_loss = loss.detach().item()  # 平均なのでbatch sizeは関係ないはず
             if args.logging_dir is not None:
@@ -654,7 +659,7 @@ def train(args):
 
         if args.logging_dir is not None:
             logs = {"loss/epoch": loss_recorder.moving_average}
-            accelerator.log(logs, step=global_step)
+            accelerator.log(logs, step=epoch + 1)
 
         accelerator.wait_for_everyone()
 
@@ -679,7 +684,6 @@ def train(args):
                     logit_scale,
                     ckpt_info,
                 )
-            accelerator.wait_for_everyone()
 
         sdxl_train_util.sample_images(
             accelerator,
@@ -692,7 +696,6 @@ def train(args):
             [text_encoder1, text_encoder2],
             unet,
         )
-        accelerator.wait_for_everyone()
 
     is_main_process = accelerator.is_main_process
     # if is_main_process:
