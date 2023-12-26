@@ -142,19 +142,16 @@ def get_tag_name(score, thresholds, tag_names):
     return tag
 
 def get_tags(img_path):
-    try:
-        with open(f"{img_path}.json", "r") as f:
-            metadata = json.load(f)
-            rating_tag = rating_tag_map[metadata["rating"]]
-            quality_tag = get_tag_name(metadata["score"], quality_thresholds, quality_tag_names)
-            year_tag = f"year {metadata['created_at'][:4]}"
-    except FileNotFoundError:
-        dot_idx = img_path.rfind(".")
-        with open(f"{img_path[:dot_idx]}.webp.json", "r") as f:
-            metadata = json.load(f)
-            rating_tag = rating_tag_map[metadata["rating"]]
-            quality_tag = get_tag_name(metadata["score"], quality_thresholds, quality_tag_names)
-            year_tag = f"year {metadata['created_at'][:4]}"
+    json_path = img_path + ".json"
+    if not os.path.exists(json_path):
+        json_path = os.path.splitext(img_path)[0] + ".webp.json"
+    if not os.path.exists(json_path):
+        json_path = os.path.splitext(img_path)[0] + ".gif.json"
+    with open(json_path, "r") as f:
+        metadata = json.load(f)
+        rating_tag = rating_tag_map[metadata["rating"]]
+        quality_tag = get_tag_name(metadata["score"], quality_thresholds, quality_tag_names)
+        year_tag = f"year {metadata['created_at'][:4]}"
     return rating_tag, quality_tag, year_tag, metadata["score"]
 
 def aesthetic_score_inference(images, device, model2, model):
@@ -188,7 +185,7 @@ for data_entry in tqdm(data, smoothing=0.0):
     for i in range(len(img_paths)):
         try:
             # For scrapped images
-            """
+
             if tags[i][-2] in aesthetic_tag_names:
                 if skip_existing:
                     continue
@@ -219,11 +216,14 @@ for data_entry in tqdm(data, smoothing=0.0):
                 #print(img_paths[i], quality_score, scores[i], f", {rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}")
 
                 with open(tag_paths[i], "a") as f:
-                    f.write(f", {rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}")
-            """
+                    if rating_tag:
+                        f.write(f", {rating_tag}, {quality_tag}, {aesthetic_tag}, {year_tag}")
+                    else:
+                        f.write(f", {quality_tag}, {aesthetic_tag}, {year_tag}")
+
 
             # For auto tagged images
-
+            """
             if tags[i][-1] in aesthetic_tag_names:
                 if skip_existing:
                     continue
@@ -245,7 +245,7 @@ for data_entry in tqdm(data, smoothing=0.0):
 
                 with open(tag_paths[i], "a") as f:
                     f.write(f", {aesthetic_tag}")
-
+            """
 
         except IndexError as e:
             print(f"Corrupted tag file: {tag_paths[i]}, error: {e}")
