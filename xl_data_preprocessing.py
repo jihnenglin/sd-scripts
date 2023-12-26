@@ -3,7 +3,7 @@ import os
 import random
 import concurrent.futures
 from tqdm import tqdm
-from PIL import Image
+from PIL import Image, ImageSequence
 
 root_dir = "~/sd-train"
 repo_dir = os.path.join(root_dir, "sd-scripts")
@@ -28,6 +28,7 @@ supported_types = [
     ".jpeg",
     ".webp",
     ".bmp",
+    ".gif",
     ".caption",
     ".npz",
     ".txt",
@@ -35,14 +36,14 @@ supported_types = [
 ]
 
 background_colors = [
-    (255, 255, 255),
-    (0, 0, 0),
-    (255, 0, 0),
-    (0, 255, 0),
-    (0, 0, 255),
-    (255, 255, 0),
-    (255, 0, 255),
-    (0, 255, 255),
+    (255, 255, 255, 255),
+    (0, 0, 0, 255),
+    (255, 0, 0, 255),
+    (0, 255, 0, 255),
+    (0, 0, 255, 255),
+    (255, 255, 0, 255),
+    (255, 0, 255, 255),
+    (0, 255, 255, 255),
 ]
 
 def clean_directory(directory):
@@ -60,35 +61,49 @@ def process_image(image_path):
     img = Image.open(image_path)
     img_dir, image_name = os.path.split(image_path)
 
-    if img.mode in ("RGBA", "LA"):
+    frames = list(ImageSequence.Iterator(img))
+    if len(frames) > 1:
+        print(f"Deleting file {image_name} from {img_dir}")
+        os.remove(image_path)
+
+    if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+        img = img.convert('RGBA')
         if random_color:
             background_color = random.choice(background_colors)
         else:
-            background_color = (255, 255, 255)
-        bg = Image.new("RGB", img.size, background_color)
-        bg.paste(img, mask=img.split()[-1])
+            background_color = (255, 255, 255, 255)
+        bg = Image.new("RGBA", img.size, background_color)
+        bg.paste(img, (0, 0), img)
+        bg = bg.convert("RGB")
 
-        if image_name.endswith(".webp"):
-            bg = bg.convert("RGB")
-            new_image_path = os.path.join(img_dir, image_name.replace(".webp", ".jpg"))
-            bg.save(new_image_path, "JPEG")
-            os.remove(image_path)
-            print(f" Converted image: {image_name} to {os.path.basename(new_image_path)}")
+        if image_name.endswith(".webp") or image_name.endswith(".gif"):
+            new_image_path = os.path.splitext(image_path)[0] + ".png"
+            bg.save(new_image_path, "PNG")
+            try:
+                Image.open(new_image_path)
+                os.remove(image_path)
+                print(f" Converted image: {image_name} to {os.path.basename(new_image_path)}")
+            except Exception as e:
+                print(f"Error converting {new_image_path}: {e}")
         else:
             bg.save(image_path, "PNG")
             print(f" Converted image: {image_name}")
     else:
-        if image_name.endswith(".webp"):
-            new_image_path = os.path.join(img_dir, image_name.replace(".webp", ".jpg"))
-            img.save(new_image_path, "JPEG")
-            os.remove(image_path)
-            print(f" Converted image: {image_name} to {os.path.basename(new_image_path)}")
+        if image_name.endswith(".webp") or image_name.endswith(".gif"):
+            new_image_path = os.path.splitext(image_path)[0] + ".png"
+            img.save(new_image_path, "PNG")
+            try:
+                Image.open(new_image_path)
+                os.remove(image_path)
+                print(f" Converted image: {image_name} to {os.path.basename(new_image_path)}")
+            except Exception as e:
+                print(f"Error converting {new_image_path}: {e}")
 
 def find_images(directory):
     images = []
     for root, _, files in os.walk(directory):
         for file in files:
-            if file.endswith(".png") or file.endswith(".webp"):
+            if file.endswith(".png") or file.endswith(".webp") or file.endswith(".gif"):
                 images.append(os.path.join(root, file))
     return images
 

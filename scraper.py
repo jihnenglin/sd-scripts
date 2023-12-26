@@ -11,6 +11,7 @@ parser.add_argument("--workers", type=int, default=1, help="Number of worker pro
 parser.add_argument("--overlap", type=int, default=0, help="Overlapping index range")
 parser.add_argument("--write_metadata", action="store_false", help="Write metadata to separate JSON files")
 parser.add_argument("--write-tags", action="store_false", help="Write image tags to separate text files")
+parser.add_argument("--filter", type=str, default=None, help="Python expression controlling which files to download. Files for which the expression evaluates to False are ignored.")
 parser.add_argument("--no_skip", action="store_true", help="Do not skip downloads; overwrite existing files")
 args = parser.parse_args()
 
@@ -94,7 +95,7 @@ get_url_config = {
     "get-urls" : True,
     "no-skip" : args.no_skip,
     "range" : args.range if args.range else None,
-    "user-agent" : user_agent
+    "user-agent" : user_agent,
 }
 
 scrape_config = {
@@ -103,7 +104,8 @@ scrape_config = {
     "no-skip" : args.no_skip,
     "write-metadata": args.write_metadata,
     "write-tags" : args.write_tags,
-    "user-agent" : user_agent
+    "user-agent" : user_agent,
+    "filter" : args.filter,
 }
 
 get_url_args = scrape(get_url_config)
