@@ -4,15 +4,17 @@ import subprocess
 import argparse
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--directory", type=str, default=None, help="Exact location for file downloads")
 parser.add_argument("--prompt", type=str, default=None, help="Scrape images that satisfy this condition")
 parser.add_argument("--post", type=str, default=None, help="Scrape image post id")
 parser.add_argument("--range", type=str, default=None, help="Index range specifying which files to download.")
 parser.add_argument("--workers", type=int, default=1, help="Number of worker processes")
 parser.add_argument("--overlap", type=int, default=0, help="Overlapping index range")
-parser.add_argument("--write_metadata", action="store_false", help="Write metadata to separate JSON files")
+parser.add_argument("--write-metadata", action="store_false", help="Write metadata to separate JSON files")
 parser.add_argument("--write-tags", action="store_false", help="Write image tags to separate text files")
+parser.add_argument("--no-download", action="store_true", help="Do not download any files")
 parser.add_argument("--filter", type=str, default=None, help="Python expression controlling which files to download. Files for which the expression evaluates to False are ignored.")
-parser.add_argument("--no_skip", action="store_true", help="Do not skip downloads; overwrite existing files")
+parser.add_argument("--no-skip", action="store_true", help="Do not skip downloads; overwrite existing files")
 args = parser.parse_args()
 
 if args.range:
@@ -30,17 +32,12 @@ if args.range:
     print(id_chunks)
 
 root_dir = "~/sd-train"
-scraped_data_dir = os.path.join(root_dir, "scraped_data")
 
-os.chdir(root_dir)
 # Use `gallery-dl` to scrape images from an imageboard site. To specify `prompt(s)`, separate them with commas (e.g., `hito_komoru, touhou`).
 booru = "Danbooru"  # ["Danbooru", "Gelbooru", "Safebooru"]
 
 # Alternatively, you can provide a `custom_url` instead of using a predefined site.
 custom_url = ""
-
-# Use the `sub_folder` option to organize the downloaded images into separate folders based on their concept or category.
-sub_folder = ""
 
 user_agent = "gdl/1.24.5"
 
@@ -52,14 +49,6 @@ if args.prompt:
 
     replacement_dict = {" ": "", "(": "%28", ")": "%29", ":": "%3a"}
     tags = ''.join(replacement_dict.get(c, c) for c in tags)
-
-if sub_folder == "":
-    image_dir = scraped_data_dir
-elif sub_folder.startswith("/content"):
-    image_dir = sub_folder
-else:
-    image_dir = os.path.join(scraped_data_dir, sub_folder)
-    os.makedirs(image_dir, exist_ok=True)
 
 if booru == "Danbooru":
     if args.prompt:
@@ -100,8 +89,9 @@ get_url_config = {
 
 scrape_config = {
     "_valid_url" : valid_url,
-    "directory" : image_dir,
+    "directory" : args.directory,
     "no-skip" : args.no_skip,
+    "no-download" : args.no_download,
     "write-metadata": args.write_metadata,
     "write-tags" : args.write_tags,
     "user-agent" : user_agent,
@@ -119,7 +109,7 @@ if args.write_tags:
         for i in id_chunks:
             scrape_config["range"] = f"{i[0]}-{i[1]}"
             scrape_args = scrape(scrape_config)
-            subprocess.Popen(f"nohup gallery-dl {scrape_args} {additional_arguments} &", shell=True)
+            subprocess.Popen(f"setsid nohup gallery-dl {scrape_args} {additional_arguments} &", shell=True)
 else:
     cap = subprocess.run(f"gallery-dl {get_url_args} {additional_arguments}", shell=True, capture_output=True, text=True)
     with open(scraper_text, "w") as f:

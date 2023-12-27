@@ -2,7 +2,7 @@ import os
 import html
 
 root_dir = "~/sd-train"
-scraped_data_dir = os.path.join(root_dir, "scraped_data")
+scraped_data_dir = os.path.join(root_dir, "train_data")
 
 def pre_process_tags(directory):
     for item in os.listdir(directory):
@@ -19,10 +19,12 @@ def pre_process_tags(directory):
 
             contents = html.unescape(contents)
             contents = contents.replace("_", " ")
-            contents = ", ".join(contents.split("\n")[:-1])
+            lines = contents.split("\n")
+            if len(lines) > 1:
+                contents = ", ".join(lines[:-1])
 
-            with open(new_path, "w") as f:
-                f.write(contents)
+                with open(new_path, "w") as f:
+                    f.write(contents)
 
         elif os.path.isdir(item_path):
             pre_process_tags(item_path)
