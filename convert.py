@@ -66,4 +66,5 @@ def process_image(image_path):
                 print(f"Error converting {new_image_path}: {e}")
 
 pre_process_tag(tag_path)
-process_image(image_path)
+if image_path.endswith(".png") or image_path.endswith(".webp") or image_path.endswith(".gif"):
+    process_image(image_path)
