@@ -19,10 +19,12 @@ def pre_process_tag(tag_path):
 
     contents = html.unescape(contents)
     contents = contents.replace("_", " ")
-    contents = ", ".join(contents.split("\n")[:-1])
+    lines = contents.split("\n")
+    if len(lines) > 1:
+        contents = ", ".join(lines[:-1])
 
-    with open(new_path, "w") as f:
-        f.write(contents)
+        with open(new_path, "w") as f:
+            f.write(contents)
 
 def process_image(image_path):
     img = Image.open(image_path)
