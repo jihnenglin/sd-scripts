@@ -83,14 +83,14 @@ def generate_tags(data):
     if tags_artist:
         pre_separator_tags.append(tags_artist)
 
-    if nsfw_tags:
-        post_separator_tags.append(nsfw_tags)
     if rest_general_tags:
         post_separator_tags.append(rest_general_tags)
-    if year_tag:
-        post_separator_tags.append(year_tag)
     if tags_meta:
         post_separator_tags.append(tags_meta)
+    if nsfw_tags:
+        post_separator_tags.append(nsfw_tags)
+    if year_tag:
+        post_separator_tags.append(year_tag)
     if quality_tag:
         post_separator_tags.append(quality_tag)
 
