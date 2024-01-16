@@ -99,8 +99,8 @@ def generate_tags(data):
 
     caption = f"{pre_separator_str}, {tags_separator} {post_separator_str}"
 
-    print(caption)
-    print()
+    #print(caption)
+    #print()
     return caption
 
 if __name__ == "__main__":
@@ -110,8 +110,8 @@ if __name__ == "__main__":
             data = json.load(f)
         tags = generate_tags(data)
 
-        tag_file_path = json_files.split(".")[0] + ".txt"
-        print(tag_file_path)
+        tag_file_path = file_path.split(".")[0] + ".txt"
+        #print(tag_file_path)
         with open(tag_file_path, "w") as f:
             f.write(tags)
-        input("Press enter to continue")
+        #input("Press enter to continue")
