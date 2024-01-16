@@ -14,16 +14,18 @@ vae_path = os.path.join(root_dir, "vae/sdxl_vae.safetensors")
 
 
 # This configuration is designed for `one concept` training. Refer to this [guide](https://rentry.org/kohyaminiguide#b-multi-concept-training) for multi-concept training.
-dataset_repeats = 1
+dataset_repeats       = 1
 # If `recursive`, additionally make JSON files for every top-level folder (`dataset.subset`) in `train_data_dir`.
 # If `recursive`, the additional JSON file names would be `{default_json_file_name[:-5]}_{folder_name}.json`
-in_json         = os.path.join(json_dir, "meta_lat.json")
-resolution      = 1024  # [512, 640, 768, 896, 1024]
-shuffle_caption = True
+in_json               = os.path.join(json_dir, "meta_lat.json")
+resolution            = 1024  # [512, 640, 768, 896, 1024]
+shuffle_caption       = True
 # keep heading N tokens when shuffling caption tokens (token means comma separated strings)
-keep_tokens     = 0
-color_aug       = False
-flip_aug        = False
+keep_tokens           = 0
+# A custom separator to divide the caption into fixed and flexible parts. Tokens before this separator will not be shuffled.
+keep_tokens_separator = "|||"
+color_aug             = False
+flip_aug              = False
 
 def get_supported_images(folder):
     supported_extensions = (".png", ".jpg", ".jpeg", ".webp", ".bmp")
@@ -61,6 +63,7 @@ dataset_config = {
         {
             "shuffle_caption"                : shuffle_caption,
             "keep_tokens"                    : keep_tokens,
+            "keep_tokens_separator"          : keep_tokens_separator,
             "color_aug"                      : color_aug,
             "flip_aug"                       : flip_aug,
             "face_crop_aug_range"            : None,
@@ -116,17 +119,17 @@ optimizer_type = "AdaFactor"  # ["AdamW", "AdamW8bit", "Lion8bit", "Lion", "SGDN
 optimizer_args = "[ \"scale_parameter=False\", \"relative_step=False\", \"warmup_init=False\" ]"
 ### Learning Rate Config
 # Different `optimizer_type` and `network_category` for some condition requires different learning rate. It's recommended to set `text_encoder_lr = 1/2 * unet_lr`
-learning_rate = 2e-6
+learning_rate = 8e-6
 max_grad_norm = 0.0  # default = 1.0; 0.0 for no clipping. It is recommended to be set to 0.0 when using AdaFactor with fixed learning rate
 train_text_encoder = True
 # CLIP ViT-L
-learning_rate_te1 = 2e-6
+learning_rate_te1 = 5.2e-6
 # OpenCLIP ViT-bigG
-learning_rate_te2 = 2e-6
+learning_rate_te2 = 4.8e-6
 ### LR Scheduler Config
 # `lr_scheduler` provides several methods to adjust the learning rate based on the number of epochs.
-lr_scheduler = "cosine"  # ["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"]
-lr_warmup_steps = 400
+lr_scheduler = "constant_with_warmup"  # ["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"]
+lr_warmup_steps = 1000
 # Specify `lr_scheduler_num` with `num_cycles` value for `cosine_with_restarts` or `power` value for `polynomial`
 lr_scheduler_num = 0
 
@@ -227,7 +230,7 @@ max_timestep = 1000
 resolution                  = 1024  # [512, 640, 768, 896, 1024]
 ### General Config
 max_train_n_type            = "max_train_epochs"  # ["max_train_steps", "max_train_epochs"]
-max_train_n_type_value      = 1
+max_train_n_type_value      = 1000
 train_batch_size            = 4
 max_data_loader_n_workers   = 32
 gradient_accumulation_steps = 8
@@ -242,7 +245,7 @@ save_model_as               = "safetensors" # ["ckpt", "safetensors", "diffusers
 ### Sample Prompt Config
 enable_sample               = True
 sampler                     = "euler_a"  # ["ddim", "pndm", "lms", "euler", "euler_a", "heun", "dpm_2", "dpm_2_a", "dpmsolver","dpmsolver++", "dpmsingle", "k_lms", "k_euler", "k_euler_a", "k_dpm_2", "k_dpm_2_a"]
-positive_prompt             = "1boy, aqua eyes, baseball cap, blonde hair, closed mouth, earrings, green background, hat, male focus, stud earrings, jewelry, looking at viewer, shirt, short hair, simple background, solo, upper body, yellow shirt, best quality, amazing quality, best aesthetic, absurdres"
+positive_prompt             = "1boy, male focus, aqua eyes, baseball cap, blonde hair, closed mouth, earrings, green background, hat, jewelry, looking at viewer, shirt, short hair, simple background, solo, stud earrings, upper body, yellow shirt, best quality, amazing quality, best aesthetic, absurdres"
 negative_prompt             = "lowres, (bad: 1.05), text, error, missing, extra, fewer, cropped, jpeg artifacts, worst quality, bad quality, watermark, bad aesthetic, unfinished, chromatic aberration, scan, scan artifacts"
 custom_prompt = ""
 # Specify `prompt_from_caption` if you want to use caption as prompt instead. Will be chosen randomly.
@@ -251,6 +254,7 @@ if prompt_from_caption != "none":
     custom_prompt           = ""
 num_prompt                  = 2
 sample_interval             = 100
+sample_at_first             = True
 logging_dir                 = os.path.join(root_dir, "fine_tune/logs")
 
 os.chdir(repo_dir)
@@ -305,7 +309,9 @@ train_config = {
         "gradient_checkpointing"        : gradient_checkpointing,
         "gradient_accumulation_steps"   : gradient_accumulation_steps,
         "mixed_precision"               : mixed_precision,
-        "ddp_timeout"                   : 999999,
+        "ddp_gradient_as_bucket_view"   : True,
+        "ddp_static_graph"              : True,
+        
     },
     "logging_arguments": {
         "log_with"          : "wandb" if wandb_api_key else "tensorboard",
@@ -317,6 +323,7 @@ train_config = {
         "sample_every_n_steps"    : sample_interval,
         "sample_every_n_epochs"   : None,
         "sample_sampler"          : sampler,
+        "sample_at_first"         : sample_at_first,
     },
     "saving_arguments": {
         "save_model_as": "safetensors"
