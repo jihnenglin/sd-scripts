@@ -10,7 +10,7 @@ repo_dir = os.path.join(root_dir, "sd-scripts")
 finetune_dir = os.path.join(repo_dir, "finetune")
 train_data_dir = os.path.join(root_dir, "train_data")
 json_dir = os.path.join(root_dir, "json")
-model_path = os.path.join(root_dir, "pretrained_model/sd_xl_base_1.0.safetensors")
+model_path = os.path.join(root_dir, "vae/sdxl_vae.safetensors")
 
 os.chdir(root_dir)
 
