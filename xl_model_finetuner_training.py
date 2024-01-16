@@ -242,8 +242,8 @@ save_model_as               = "safetensors" # ["ckpt", "safetensors", "diffusers
 ### Sample Prompt Config
 enable_sample               = True
 sampler                     = "euler_a"  # ["ddim", "pndm", "lms", "euler", "euler_a", "heun", "dpm_2", "dpm_2_a", "dpmsolver","dpmsolver++", "dpmsingle", "k_lms", "k_euler", "k_euler_a", "k_dpm_2", "k_dpm_2_a"]
-positive_prompt             = "1boy, aqua eyes, baseball cap, blonde hair, closed mouth, earrings, green background, hat, male focus, stud earrings, jewelry, looking at viewer, shirt, short hair, simple background, solo, upper body, yellow shirt, best quality, amazing quality, very aesthetic, absurdres"
-negative_prompt             = "lowres, (bad), text, error, missing, extra, fewer, cropped, jpeg artifacts, worst quality, bad quality, watermark, bad aesthetic, unfinished, chromatic aberration, scan, scan artifacts, "
+positive_prompt             = "1boy, aqua eyes, baseball cap, blonde hair, closed mouth, earrings, green background, hat, male focus, stud earrings, jewelry, looking at viewer, shirt, short hair, simple background, solo, upper body, yellow shirt, best quality, amazing quality, best aesthetic, absurdres"
+negative_prompt             = "lowres, (bad: 1.05), text, error, missing, extra, fewer, cropped, jpeg artifacts, worst quality, bad quality, watermark, bad aesthetic, unfinished, chromatic aberration, scan, scan artifacts"
 custom_prompt = ""
 # Specify `prompt_from_caption` if you want to use caption as prompt instead. Will be chosen randomly.
 prompt_from_caption         = "none"  # ["none", ".txt", ".caption"]
@@ -260,7 +260,7 @@ prompt_config = {
         "negative_prompt" : negative_prompt,
         "width"           : resolution,
         "height"          : resolution,
-        "scale"           : 7,
+        "scale"           : 5,
         "sample_steps"    : 28,
         "subset"          : [],
     }
