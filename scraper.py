@@ -11,7 +11,7 @@ parser.add_argument("--range", type=str, default=None, help="Index range specify
 parser.add_argument("--workers", type=int, default=1, help="Number of worker processes")
 parser.add_argument("--overlap", type=int, default=0, help="Overlapping index range")
 parser.add_argument("--write-metadata", action="store_false", help="Write metadata to separate JSON files")
-parser.add_argument("--write-tags", action="store_false", help="Write image tags to separate text files")
+parser.add_argument("--write-tags", action="store_true", help="Write image tags to separate text files")
 parser.add_argument("--no-download", action="store_true", help="Do not download any files")
 parser.add_argument("--filter", type=str, default=None, help="Python expression controlling which files to download. Files for which the expression evaluates to False are ignored.")
 parser.add_argument("--no-skip", action="store_true", help="Do not skip downloads; overwrite existing files")
@@ -102,7 +102,7 @@ get_url_args = scrape(get_url_config)
 scrape_args = scrape(scrape_config)
 scraper_text = os.path.join(root_dir, "scrape_this.txt")
 
-if args.write_tags:
+if args.write_metadata:
     if not args.range:
         subprocess.run(f"gallery-dl {scrape_args} {additional_arguments}", shell=True)
     else:

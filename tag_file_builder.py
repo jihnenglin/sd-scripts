@@ -53,7 +53,7 @@ def generate_tags(data):
     elif rating in "s":
         nsfw_tags = "slightly nsfw"
     else:
-        nsfw_tags = ""
+        nsfw_tags = "sfw"
 
     tags_general_list = tags_general.split(', ')
     special_tags = [

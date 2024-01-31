@@ -180,7 +180,7 @@ def main(args):
             # 最初の4つはratingなので無視する
             # # First 4 labels are actually ratings: pick one with argmax
             if args.rating_tag:
-                ratings_names = [None, "slightly nsfw", "fairly nsfw", "very nsfw"]
+                ratings_names = ["sfw", "slightly nsfw", "fairly nsfw", "very nsfw"]
                 rating_index = prob[:4].argmax()
                 rating_tag_name = ratings_names[rating_index]
 
@@ -195,8 +195,8 @@ def main(args):
             for i, p in enumerate(prob[4:]):
                 if i < len(general_tags) and p >= args.general_threshold:
                     tag_name = general_tags[i]
-                    #if args.remove_underscore and len(tag_name) > 3:  # ignore emoji tags like >_< and ^_^
-                    if args.remove_underscore:
+                    if args.remove_underscore and len(tag_name) > 3:  # ignore emoji tags like >_< and ^_^
+                    #if args.remove_underscore:
                         tag_name = tag_name.replace("_", " ")
 
                     if tag_name not in undesired_tags:
@@ -205,8 +205,8 @@ def main(args):
                         combined_tags.append(tag_name)
                 elif i >= len(general_tags) and p >= args.character_threshold:
                     tag_name = character_tags[i - len(general_tags)]
-                    #if args.remove_underscore and len(tag_name) > 3:
-                    if args.remove_underscore:
+                    if args.remove_underscore and len(tag_name) > 3:
+                    #if args.remove_underscore:
                         tag_name = tag_name.replace("_", " ")
 
                     if tag_name not in undesired_tags:
