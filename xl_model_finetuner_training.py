@@ -311,7 +311,6 @@ train_config = {
         "mixed_precision"               : mixed_precision,
         "ddp_gradient_as_bucket_view"   : True,
         "ddp_static_graph"              : True,
-        
     },
     "logging_arguments": {
         "log_with"          : "wandb" if wandb_api_key else "tensorboard",
