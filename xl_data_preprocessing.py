@@ -134,8 +134,8 @@ import subprocess
 # If `recursive`, the additional JSON file names would be `{default_json_file_name[:-5]}_{folder_name}.json`
 bucketing_json            = os.path.join(json_dir, "meta_lat.json")
 metadata_json             = os.path.join(json_dir, "meta_clean.json")
-batch_size                = 16
-max_data_loader_n_workers = 32
+batch_size                = 8
+max_data_loader_n_workers = 16
 bucket_resolution         = 1024  # [512, 640, 768, 896, 1024]
 mixed_precision           = "no"  # ["no", "fp16", "bf16"]
 flip_aug                  = False

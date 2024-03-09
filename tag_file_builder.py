@@ -35,11 +35,11 @@ def generate_tags(data):
     quality_tag = ""
     if score >= 150:
         quality_tag = "best quality"
-    elif 100 <= score < 150:
+    elif 75 <= score < 150:
         quality_tag = "amazing quality"
-    elif 75 <= score < 100:
+    elif 25 <= score < 75:
         quality_tag = "great quality"
-    elif 0 <= score < 75 :
+    elif 0 <= score < 25:
         quality_tag = "normal quality"
     elif -5 < score < 0:
         quality_tag = "bad quality"

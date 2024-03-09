@@ -22,7 +22,7 @@ batch_size = 8
 max_data_loader_n_workers = 32
 skip_existing = True
 
-rating_tag_map = {"g": None, "s": "slightly nsfw", "q": "fairly nsfw", "e": "very nsfw"}
+rating_tag_map = {"g": "sfw", "s": "slightly nsfw", "q": "fairly nsfw", "e": "very nsfw"}
 quality_thresholds = [150, 100, 75, 0, -4]
 quality_tag_names = ["best quality", "amazing quality", "great quality", "normal quality", "bad quality", "worst quality"]
 aesthetic_thresholds = [6.675, 6.0, 5.0]
@@ -185,7 +185,7 @@ for data_entry in tqdm(data, smoothing=0.0):
     for i in range(len(img_paths)):
         try:
             # For scrapped images
-
+            """
             if tags[i][-1] in aesthetic_tag_names:
                 if skip_existing:
                     continue
@@ -207,9 +207,9 @@ for data_entry in tqdm(data, smoothing=0.0):
 
                 with open(tag_paths[i], "a") as f:
                     f.write(f", {aesthetic_tag}")
-
-            # For auto tagged images
             """
+            # For auto tagged images
+            
             if tags[i][-1] in aesthetic_tag_names:
                 if skip_existing:
                     continue
@@ -231,7 +231,7 @@ for data_entry in tqdm(data, smoothing=0.0):
 
                 with open(tag_paths[i], "a") as f:
                     f.write(f", {aesthetic_tag}")
-            """
+            
 
         except IndexError as e:
             print(f"Corrupted tag file: {tag_paths[i]}, error: {e}")
