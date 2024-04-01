@@ -245,8 +245,8 @@ save_model_as               = "safetensors" # ["ckpt", "safetensors", "diffusers
 ### Sample Prompt Config
 enable_sample               = True
 sampler                     = "euler_a"  # ["ddim", "pndm", "lms", "euler", "euler_a", "heun", "dpm_2", "dpm_2_a", "dpmsolver","dpmsolver++", "dpmsingle", "k_lms", "k_euler", "k_euler_a", "k_dpm_2", "k_dpm_2_a"]
-positive_prompt             = "1boy, male focus, aqua eyes, baseball cap, blonde hair, closed mouth, earrings, green background, hat, jewelry, looking at viewer, shirt, short hair, simple background, solo, stud earrings, upper body, yellow shirt, best quality, amazing quality, best aesthetic, amazing aesthetic, absurdres"
-negative_prompt             = "lowres, bad, text, error, missing, extra, fewer, cropped, jpeg artifacts, worst quality, bad quality, watermark, bad aesthetic, unfinished, chromatic aberration, scan, scan artifacts, 1girl, breasts"
+positive_prompt             = "1boy, male focus, aqua eyes, baseball cap, blonde hair, closed mouth, earrings, green background, hat, jewelry, looking at viewer, shirt, short hair, simple background, solo, stud earrings, upper body, yellow shirt, best quality, amazing quality, best aesthetic, absurdres"
+negative_prompt             = "lowres, bad, text, error, missing, extra, fewer, cropped, jpeg artifacts, worst quality, bad quality, watermark, bad aesthetic, unfinished, chromatic aberration, scan, scan artifacts"
 custom_prompt = ""
 # Specify `prompt_from_caption` if you want to use caption as prompt instead. Will be chosen randomly.
 prompt_from_caption         = "none"  # ["none", ".txt", ".caption"]
@@ -264,7 +264,7 @@ prompt_config = {
         "negative_prompt" : negative_prompt,
         "width"           : resolution,
         "height"          : resolution,
-        "scale"           : 5,
+        "scale"           : 8.5,
         "sample_steps"    : 28,
         "subset"          : [],
     }
@@ -311,6 +311,7 @@ train_config = {
         "mixed_precision"               : mixed_precision,
         "ddp_gradient_as_bucket_view"   : True,
         "ddp_static_graph"              : True,
+        "highvram"                      : True,
     },
     "logging_arguments": {
         "log_with"          : "wandb" if wandb_api_key else "tensorboard",
