@@ -249,6 +249,19 @@ ControlNet-LLLite, a novel method for ControlNet with SDXL, is added. See [docum
 
 ## Change History
 
+### Mar 15, 2024 / 2024/3/15: v0.8.5
+
+- Fixed a bug that the value of timestep embedding during SDXL training was incorrect.
+  - Please update for SDXL training.
+  - The inference with the generation script is also fixed.
+  - This fix appears to resolve an issue where unintended artifacts occurred in trained models under certain conditions. 
+We would like to express our deep gratitude to Mark Saint (cacoe) from leonardo.ai, for reporting the issue and cooperating with the verification, and to gcem156 for the advice provided in identifying the part of the code that needed to be fixed.
+
+- SDXL 学習時の timestep embedding の値が誤っていたのを修正しました。
+  - SDXL の学習時にはアップデートをお願いいたします。
+  - 生成スクリプトでの推論時についてもあわせて修正しました。
+  - この修正により、特定の条件下で学習されたモデルに意図しないアーティファクトが発生する問題が解消されるようです。問題を報告いただき、また検証にご協力いただいた leonardo.ai の Mark Saint (cacoe) 氏、および修正点の特定に関するアドバイスをいただいた gcem156 氏に深く感謝いたします。
+
 ### Feb 24, 2024 / 2024/2/24: v0.8.4
 
 - The log output has been improved. PR [#905](https://github.com/kohya-ss/sd-scripts/pull/905) Thanks to shirayu!
