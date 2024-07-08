@@ -91,13 +91,14 @@ def generate_tags(data):
         post_separator_tags.append(nsfw_tags)
     if year_tag:
         post_separator_tags.append(year_tag)
-    if quality_tag:
-        post_separator_tags.append(quality_tag)
+    #if quality_tag:
+        #post_separator_tags.append(quality_tag)
 
     pre_separator_str = ', '.join(pre_separator_tags)
     post_separator_str = ', '.join(post_separator_tags)
 
-    caption = f"{pre_separator_str}, {tags_separator} {post_separator_str}"
+    #caption = f"{pre_separator_str}, {tags_separator} {post_separator_str}"
+    caption = f"{pre_separator_str}, {post_separator_str}"
 
     #print(caption)
     #print()

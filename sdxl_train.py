@@ -45,6 +45,9 @@ from library.custom_train_functions import (
 )
 from library.sdxl_original_unet import SdxlUNet2DConditionModel
 
+import loss_mlp
+import matplotlib.pyplot as plt
+
 
 UNET_NUM_BLOCKS_FOR_BLOCK_LR = 23
 
@@ -327,6 +330,13 @@ def train(args):
     if not train_unet:
         unet.to(accelerator.device, dtype=weight_dtype)  # because of unet is not prepared
 
+    noise_scheduler = DDPMScheduler(
+        beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", num_train_timesteps=1000, clip_sample=False
+    )
+    if args.zero_terminal_snr:
+        custom_train_functions.fix_noise_scheduler_betas_for_zero_terminal_snr(noise_scheduler)
+    prepare_scheduler_for_custom_training(noise_scheduler, accelerator.device)
+
     training_models = []
     params_to_optimize = []
     if train_unet:
@@ -342,6 +352,24 @@ def train(args):
     if train_text_encoder2:
         training_models.append(text_encoder2)
         params_to_optimize.append({"params": list(text_encoder2.parameters()), "lr": args.learning_rate_te2 or args.learning_rate})
+
+    if args.adaptive_loss_weighting:
+        from safetensors.torch import load_file
+        if args.adaptive_loss_model_path:
+            adaptive_loss_model_sd = load_file(args.adaptive_loss_model_path, device="cpu")
+        elif args.resume:
+            adaptive_loss_model_sd = load_file(args.resume + "/model_3.safetensors", device="cpu")
+        else:
+            adaptive_loss_model = loss_mlp.AdaptiveLossWeightMLP(noise_scheduler)
+        from accelerate import init_empty_weights
+        with init_empty_weights():
+            adaptive_loss_model = loss_mlp.AdaptiveLossWeightMLP(noise_scheduler)
+        from library.sdxl_model_util import _load_state_dict_on_device
+        _ = _load_state_dict_on_device(adaptive_loss_model, adaptive_loss_model_sd, device="cpu", dtype=None)
+        adaptive_loss_model.requires_grad_(True)
+        adaptive_loss_model.train()
+        training_models.append(adaptive_loss_model)
+        params_to_optimize.append({"params": list(adaptive_loss_model.parameters()), "lr": 0.005, "weight_decay": 0.0})
 
     # calculate number of trainable parameters
     n_params = 0
@@ -407,6 +435,7 @@ def train(args):
         text_encoder1.text_model.encoder.layers[-1].requires_grad_(False)
         text_encoder1.text_model.final_layer_norm.requires_grad_(False)
 
+    use_schedule_free_optimizer = args.optimizer_type.lower().endswith("schedulefree")
     if args.deepspeed:
         ds_model = deepspeed_utils.prepare_deepspeed_model(
             args,
@@ -415,9 +444,9 @@ def train(args):
             text_encoder2=text_encoder2 if train_text_encoder2 else None,
         )
         # most of ZeRO stage uses optimizer partitioning, so we have to prepare optimizer and ds_model at the same time. # pull/1139#issuecomment-1986790007
-        ds_model, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
-            ds_model, optimizer, train_dataloader, lr_scheduler
-        )
+        ds_model, optimizer, train_dataloader = accelerator.prepare(ds_model, optimizer, train_dataloader)
+        if not use_schedule_free_optimizer:
+            lr_scheduler = accelerator.prepare(lr_scheduler)
         training_models = [ds_model]
 
     else:
@@ -428,7 +457,19 @@ def train(args):
             text_encoder1 = accelerator.prepare(text_encoder1)
         if train_text_encoder2:
             text_encoder2 = accelerator.prepare(text_encoder2)
-        optimizer, train_dataloader, lr_scheduler = accelerator.prepare(optimizer, train_dataloader, lr_scheduler)
+        if args.adaptive_loss_weighting:
+            adaptive_loss_model = accelerator.prepare(adaptive_loss_model)
+        if not use_schedule_free_optimizer:
+            lr_scheduler = accelerator.prepare(lr_scheduler)
+        optimizer, train_dataloader = accelerator.prepare(optimizer, train_dataloader)
+
+    # make lambda function for calling optimizer.train() and optimizer.eval() if schedule-free optimizer is used
+    if use_schedule_free_optimizer:
+        optimizer_train_if_needed = lambda: optimizer.train()
+        optimizer_eval_if_needed = lambda: optimizer.eval()
+    else:
+        optimizer_train_if_needed = lambda: None
+        optimizer_eval_if_needed = lambda: None
 
     # TextEncoderの出力をキャッシュするときにはCPUへ移動する
     if args.cache_text_encoder_outputs:
@@ -474,13 +515,6 @@ def train(args):
     progress_bar = tqdm(range(args.max_train_steps), smoothing=0, disable=not accelerator.is_local_main_process, desc="steps")
     global_step = 0
 
-    noise_scheduler = DDPMScheduler(
-        beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear", num_train_timesteps=1000, clip_sample=False
-    )
-    prepare_scheduler_for_custom_training(noise_scheduler, accelerator.device)
-    if args.zero_terminal_snr:
-        custom_train_functions.fix_noise_scheduler_betas_for_zero_terminal_snr(noise_scheduler)
-
     if accelerator.is_main_process:
         init_kwargs = {}
         if args.wandb_run_name:
@@ -503,6 +537,7 @@ def train(args):
             m.train()
 
         for step, batch in enumerate(train_dataloader):
+            optimizer_train_if_needed()
             current_step.value = global_step
             with accelerator.accumulate(*training_models):
                 if "latents" in batch and batch["latents"] is not None:
@@ -582,7 +617,9 @@ def train(args):
 
                 # Sample noise, sample a random timestep for each image, and add noise to the latents,
                 # with noise offset and/or multires noise if specified
-                noise, noisy_latents, timesteps, huber_c = train_util.get_noise_noisy_latents_and_timesteps(args, noise_scheduler, latents)
+                noise, noisy_latents, timesteps, huber_c = train_util.get_noise_noisy_latents_and_timesteps(
+                    args, noise_scheduler, latents
+                )
 
                 noisy_latents = noisy_latents.to(weight_dtype)  # TODO check why noisy_latents is not weight_dtype
 
@@ -590,7 +627,11 @@ def train(args):
                 with accelerator.autocast():
                     noise_pred = unet(noisy_latents, timesteps, text_embedding, vector_embedding)
 
-                target = noise
+                if args.v_parameterization:
+                    # v-parameterization training
+                    target = noise_scheduler.get_velocity(latents, noise, timesteps)
+                else:
+                    target = noise
 
                 if (
                     args.min_snr_gamma
@@ -598,6 +639,7 @@ def train(args):
                     or args.v_pred_like_loss
                     or args.debiased_estimation_loss
                     or args.masked_loss
+                    or args.adaptive_loss_weighting
                 ):
                     # do not mean over batch dimension for snr weight or scale v-pred loss
                     loss = train_util.conditional_loss(noise_pred.float(), target.float(), reduction="none", loss_type=args.loss_type, huber_c=huber_c)
@@ -606,13 +648,15 @@ def train(args):
                     loss = loss.mean([1, 2, 3])
 
                     if args.min_snr_gamma:
-                        loss = apply_snr_weight(loss, timesteps, noise_scheduler, args.min_snr_gamma)
+                        loss = apply_snr_weight(loss, timesteps, noise_scheduler, args.min_snr_gamma, args.v_parameterization)
                     if args.scale_v_pred_loss_like_noise_pred:
                         loss = scale_v_prediction_loss_like_noise_prediction(loss, timesteps, noise_scheduler)
                     if args.v_pred_like_loss:
                         loss = add_v_prediction_like_loss(loss, timesteps, noise_scheduler, args.v_pred_like_loss)
                     if args.debiased_estimation_loss:
                         loss = apply_debiased_estimation(loss, timesteps, noise_scheduler)
+                    if args.adaptive_loss_weighting:
+                        loss, loss_scaled = loss_mlp.loss_weighting(loss, timesteps, adaptive_loss_model, noise_scheduler, accelerator.device)
 
                     loss = loss.mean()  # mean over batch dimension
                 else:
@@ -626,8 +670,10 @@ def train(args):
                     accelerator.clip_grad_norm_(params_to_clip, args.max_grad_norm)
 
                 optimizer.step()
-                lr_scheduler.step()
+                lr_scheduler.step()  # if schedule-free optimizer is used, this is a no-op
                 optimizer.zero_grad(set_to_none=True)
+
+            optimizer_eval_if_needed()
 
             # Checks if the accelerator has performed an optimization step behind the scenes
             if accelerator.sync_gradients:
@@ -645,6 +691,31 @@ def train(args):
                     [text_encoder1, text_encoder2],
                     unet,
                 )
+                if args.adaptive_loss_weighting and global_step % 100 == 0:
+                    all_timesteps = torch.arange(0,1000, device=accelerator.device)
+                    adaptive_loss_model_unwrap = accelerator.unwrap_model(adaptive_loss_model)
+                    adaptive_loss_model_unwrap.eval()
+                    with torch.no_grad():
+                        _, weights = loss_mlp.loss_weighting(torch.ones((1000,), device=accelerator.device), all_timesteps, adaptive_loss_model_unwrap, noise_scheduler, accelerator.device)
+
+                    plt.figure(dpi=200)
+                    plt.plot(weights.detach().cpu().numpy())
+                    plt.xlabel('Timestep')
+                    plt.ylabel('Weight')
+                    #plt.ylim(0, 8)
+                    plt.title(f'Timestep Weightings at step {global_step}')
+                    try:
+                        wandb_tracker = accelerator.get_tracker("wandb")
+                        try:
+                            import wandb
+                        except ImportError:  # 事前に一度確認するのでここはエラー出ないはず
+                            raise ImportError("No wandb / wandb がインストールされていないようです")
+
+                        wandb_tracker.log({"loss_weights": wandb.Image(plt)}, commit=False)
+                    except:  # wandb 無効時
+                        pass
+                    plt.clf()
+                    plt.close('all')
 
                 # 指定ステップごとにモデルを保存
                 if args.save_every_n_steps is not None and global_step % args.save_every_n_steps == 0:
@@ -672,9 +743,12 @@ def train(args):
 
             current_loss = loss.detach().item()  # 平均なのでbatch sizeは関係ないはず
             if args.logging_dir is not None:
-                logs = {"loss": current_loss}
+                if args.adaptive_loss_weighting:
+                    logs = {"loss": current_loss, "loss_scaled": loss_scaled.detach().mean()}
+                else:
+                    logs = {"loss": current_loss}
                 if block_lrs is None:
-                    train_util.append_lr_to_logs(logs, lr_scheduler, args.optimizer_type, including_unet=train_unet)
+                    train_util.append_lr_to_logs(logs, lr_scheduler, args.optimizer_type, including_unet=train_unet, including_adaptive=args.adaptive_loss_weighting)
                 else:
                     append_block_lr_to_logs(block_lrs, logs, lr_scheduler, args.optimizer_type)  # U-Net is included in block_lrs
 
@@ -805,6 +879,12 @@ def setup_parser() -> argparse.ArgumentParser:
         help=f"learning rates for each block of U-Net, comma-separated, {UNET_NUM_BLOCKS_FOR_BLOCK_LR} values / "
         + f"U-Netの各ブロックの学習率、カンマ区切り、{UNET_NUM_BLOCKS_FOR_BLOCK_LR}個の値",
     )
+    parser.add_argument(
+        "--adaptive_loss_weighting",
+        action="store_true",
+        help="train with adaptive loss weighting",
+    )
+    parser.add_argument("--adaptive_loss_model_path", type=str, default=None, help="initiate the adaptive loss model with this path")
     return parser
 
 

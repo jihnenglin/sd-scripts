@@ -107,29 +107,30 @@ with open(dataset_config_file, "w") as f:
 
 print(config_str)
 
-input("Press the Enter key to continue: ")
+#input("Press the Enter key to continue: ")
 
 
 ## Optimizer Config
 import ast
 
 # Use `Adafactor` optimizer. `RMSprop 8bit` or `Adagrad 8bit` may work. `AdamW 8bit` doesn't seem to work.
-optimizer_type = "AdaFactor"  # ["AdamW", "AdamW8bit", "Lion8bit", "Lion", "SGDNesterov", "SGDNesterov8bit", "DAdaptation(DAdaptAdamPreprint)", "DAdaptAdaGrad", "DAdaptAdam", "DAdaptAdan", "DAdaptAdanIP", "DAdaptLion", "DAdaptSGD", "AdaFactor"]
+optimizer_type = "AdaFactor"  # ["AdamW", "AdamW8bit", "Lion8bit", "Lion", "SGDNesterov", "SGDNesterov8bit", "DAdaptation(DAdaptAdamPreprint)", "DAdaptAdaGrad", "DAdaptAdam", "DAdaptAdan", "DAdaptAdanIP", "DAdaptLion", "DAdaptSGD", "AdaFactor", "AdamWScheduleFree", "SGDScheduleFree"]
 # Specify `optimizer_args` to add `additional` args for optimizer, e.g: `["weight_decay=0.6"]`
 optimizer_args = "[ \"scale_parameter=False\", \"relative_step=False\", \"warmup_init=False\" ]"
+#optimizer_args = "[ \"warmup_steps=500\" ]"
 ### Learning Rate Config
 # Different `optimizer_type` and `network_category` for some condition requires different learning rate. It's recommended to set `text_encoder_lr = 1/2 * unet_lr`
-learning_rate = 8e-6
+learning_rate = 2e-5
 max_grad_norm = 0.0  # default = 1.0; 0.0 for no clipping. It is recommended to be set to 0.0 when using AdaFactor with fixed learning rate
 train_text_encoder = True
 # CLIP ViT-L
-learning_rate_te1 = 5.2e-6
+learning_rate_te1 = 1.3e-5
 # OpenCLIP ViT-bigG
-learning_rate_te2 = 4.8e-6
+learning_rate_te2 = 1.2e-5
 ### LR Scheduler Config
 # `lr_scheduler` provides several methods to adjust the learning rate based on the number of epochs.
 lr_scheduler = "constant_with_warmup"  # ["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"]
-lr_warmup_steps = 1000
+lr_warmup_steps = 2000
 # Specify `lr_scheduler_num` with `num_cycles` value for `cosine_with_restarts` or `power` value for `polynomial`
 lr_scheduler_num = 0
 
@@ -169,47 +170,70 @@ optimizer_config = {
 
 print(toml.dumps(optimizer_config))
 
-input("Press the Enter key to continue: ")
+#input("Press the Enter key to continue: ")
 
 
 ## Advanced Training Config
 
 ### Resume With Optimizer State
-optimizer_state_path      = ""
-#optimizer_state_path      = os.path.join(output_dir, "sdxl_finetune-state")
+optimizer_state_path           = ""
+#optimizer_state_path           = os.path.join(output_dir, "sdxl_finetune-state")
 ### Noise Control
-noise_control_type        = "multires_noise" # ["none", "noise_offset", "multires_noise"]
+noise_control_type             = "none" # ["none", "noise_offset", "multires_noise"]
 #### a. Noise Offset
 # Control and easily generating darker or light images by offset the noise when fine-tuning the model. Recommended value: `0.1`. Read [Diffusion With Offset Noise](https://www.crosslabs.org//blog/diffusion-with-offset-noise)
-noise_offset_num          = 0.1
+noise_offset_num               = 0.0375
 # [Experimental]
 # Automatically adjusts the noise offset based on the absolute mean values of each channel in the latents when used with `--noise_offset`. Specify a value around 1/10 to the same magnitude as the `--noise_offset` for best results. Set `0` to disable.
-adaptive_noise_scale      = 0.01
+adaptive_noise_scale           = 0
+noise_offset_random_strength   = False
 #### b. Multires Noise
 # enable multires noise with this number of iterations (if enabled, around 6-10 is recommended)
-multires_noise_iterations = 10
-multires_noise_discount   = 0.3
+multires_noise_iterations      = 6
+multires_noise_discount        = 0.3
 ### Custom Train Function
 # Gamma for reducing the weight of high-loss timesteps. Lower numbers have a stronger effect. The paper recommends `5`. Read the paper [here](https://arxiv.org/abs/2303.09556).
-min_snr_gamma             = -1
+min_snr_gamma                  = -1
 # Paper https://arxiv.org/pdf/2310.08442.pdf
-debiased_estimation_loss  = True
+debiased_estimation_loss       = False
+adaptive_loss_weighting        = True
+adaptive_loss_model_path       = None
+# Paper https://arxiv.org/pdf/2305.08891.pdf
+zero_terminal_snr              = True
+v_parameterization             = True
+# Enable input perturbation noise. Recommended value: around 0.1. Paper arxiv.org/abs/2301.11706
+ip_noise_gamma                 = -1
+ip_noise_gamma_random_strength = False
+loss_type                      = "huber" # ["l2", "huber", "smooth_l1"]
+huber_schedule                 = "snr" # ["constant", "exponential", "snr"]
+huber_c                        = 0.1
+
 
 advanced_training_config = {
     "advanced_training_config": {
-        "resume"                    : optimizer_state_path,
-        "noise_offset"              : noise_offset_num if noise_control_type == "noise_offset" else None,
-        "adaptive_noise_scale"      : adaptive_noise_scale if adaptive_noise_scale and noise_control_type == "noise_offset" else None,
-        "multires_noise_iterations" : multires_noise_iterations if noise_control_type =="multires_noise" else None,
-        "multires_noise_discount"   : multires_noise_discount if noise_control_type =="multires_noise" else None,
-        "min_snr_gamma"             : min_snr_gamma if not min_snr_gamma == -1 else None,
-        "debiased_estimation_loss"  : debiased_estimation_loss,
+        "resume"                         : optimizer_state_path,
+        "noise_offset"                   : noise_offset_num if noise_control_type == "noise_offset" else None,
+        "adaptive_noise_scale"           : adaptive_noise_scale if adaptive_noise_scale and noise_control_type == "noise_offset" else None,
+        "noise_offset_random_strength"   : noise_offset_random_strength if noise_control_type == "noise_offset" else False,
+        "multires_noise_iterations"      : multires_noise_iterations if noise_control_type =="multires_noise" else None,
+        "multires_noise_discount"        : multires_noise_discount if noise_control_type =="multires_noise" else None,
+        "min_snr_gamma"                  : min_snr_gamma if not min_snr_gamma == -1 else None,
+        "debiased_estimation_loss"       : debiased_estimation_loss,
+        "adaptive_loss_weighting"        : adaptive_loss_weighting,
+        "adaptive_loss_model_path"       : adaptive_loss_model_path,
+        "zero_terminal_snr"              : zero_terminal_snr,
+        "v_parameterization"             : v_parameterization,
+        "ip_noise_gamma"                 : ip_noise_gamma if not ip_noise_gamma == -1 else None,
+        "ip_noise_gamma_random_strength" : ip_noise_gamma_random_strength if not ip_noise_gamma == -1 else False,
+        "loss_type"                      : loss_type,
+        "huber_schedule"                 : huber_schedule,
+        "huber_c"                        : huber_c,
     }
 }
 
 print(toml.dumps(advanced_training_config))
 
-input("Press the Enter key to continue: ")
+#input("Press the Enter key to continue: ")
 
 
 ## Training Config
@@ -224,13 +248,15 @@ gradient_checkpointing  = True
 no_half_vae             = True
 # Recommended parameter for SDXL training but if you enable it, `shuffle_caption` won't work
 cache_text_encoder_outputs = False
+deepspeed                  = False
+zero_stage                 = 0  # [0, 1, 2, 3]
 # These options can be used to train U-Net with different timesteps. The default values are 0 and 1000.
 min_timestep = 0
 max_timestep = 1000
 resolution                  = 1024  # [512, 640, 768, 896, 1024]
 ### General Config
 max_train_n_type            = "max_train_epochs"  # ["max_train_steps", "max_train_epochs"]
-max_train_n_type_value      = 1000
+max_train_n_type_value      = 100
 train_batch_size            = 4
 max_data_loader_n_workers   = 32
 gradient_accumulation_steps = 8
@@ -245,8 +271,8 @@ save_model_as               = "safetensors" # ["ckpt", "safetensors", "diffusers
 ### Sample Prompt Config
 enable_sample               = True
 sampler                     = "euler_a"  # ["ddim", "pndm", "lms", "euler", "euler_a", "heun", "dpm_2", "dpm_2_a", "dpmsolver","dpmsolver++", "dpmsingle", "k_lms", "k_euler", "k_euler_a", "k_dpm_2", "k_dpm_2_a"]
-positive_prompt             = "1boy, male focus, aqua eyes, baseball cap, blonde hair, closed mouth, earrings, green background, hat, jewelry, looking at viewer, shirt, short hair, simple background, solo, stud earrings, upper body, yellow shirt, best quality, amazing quality, best aesthetic, absurdres"
-negative_prompt             = "lowres, bad, text, error, missing, extra, fewer, cropped, jpeg artifacts, worst quality, bad quality, watermark, bad aesthetic, unfinished, chromatic aberration, scan, scan artifacts"
+positive_prompt             = "best aesthetic, 1boy, male focus, aqua eyes, baseball cap, blonde hair, closed mouth, earrings, green background, hat, jewelry, looking at viewer, shirt, short hair, simple background, solo, stud earrings, upper body, yellow shirt, absurdres, highres"
+negative_prompt             = ""
 custom_prompt = ""
 # Specify `prompt_from_caption` if you want to use caption as prompt instead. Will be chosen randomly.
 prompt_from_caption         = "none"  # ["none", ".txt", ".caption"]
@@ -264,7 +290,7 @@ prompt_config = {
         "negative_prompt" : negative_prompt,
         "width"           : resolution,
         "height"          : resolution,
-        "scale"           : 8.5,
+        "scale"           : 7,
         "sample_steps"    : 28,
         "subset"          : [],
     }
@@ -312,12 +338,15 @@ train_config = {
         "ddp_gradient_as_bucket_view"   : True,
         "ddp_static_graph"              : True,
         "highvram"                      : True,
+        "deepspeed"                     : deepspeed,
+        "zero_stage"                    : zero_stage,
     },
     "logging_arguments": {
         "log_with"          : "wandb" if wandb_api_key else "tensorboard",
         "log_tracker_name"  : project_name if wandb_api_key and not project_name == "last" else None,
         "logging_dir"       : logging_dir,
         "log_prefix"        : project_name if not wandb_api_key else None,
+        "wandb_api_key"     : wandb_api_key if wandb_api_key else None,
     },
     "sample_prompt_arguments": {
         "sample_every_n_steps"    : sample_interval,
@@ -412,7 +441,7 @@ if advanced_training_warning:
 
 print(prompt_str)
 
-input("Press the Enter key to continue: ")
+#input("Press the Enter key to continue: ")
 
 
 ## Start Training
@@ -462,7 +491,6 @@ train_conf = {
     "sample_prompts"  : sample_prompt if os.path.exists(sample_prompt) else None,
     "dataset_config"  : dataset_config_file,
     "config_file"     : config_file,
-    "wandb_api_key"   : wandb_api_key if wandb_api_key else None,
 }
 
 accelerate_args = train(accelerate_conf)

@@ -3087,7 +3087,7 @@ def add_training_arguments(parser: argparse.ArgumentParser, support_dreambooth: 
     )
     parser.add_argument("--seed", type=int, default=None, help="random seed for training / 学習時の乱数のseed")
     parser.add_argument(
-        "--gradient_checkpointing", action="store_true", help="enable gradient checkpointing / grandient checkpointingを有効にする"
+        "--gradient_checkpointing", action="store_true", help="enable gradient checkpointing / gradient checkpointingを有効にする"
     )
     parser.add_argument(
         "--gradient_accumulation_steps",
@@ -4088,6 +4088,21 @@ def get_optimizer(args, trainable_params):
         optimizer_class = torch.optim.AdamW
         optimizer = optimizer_class(trainable_params, lr=lr, **optimizer_kwargs)
 
+    elif optimizer_type.endswith("schedulefree".lower()):
+        try:
+            import schedulefree as sf
+        except ImportError:
+            raise ImportError("No schedulefree / schedulefreeがインストールされていないようです")
+        if optimizer_type == "AdamWScheduleFree".lower():
+            optimizer_class = sf.AdamWScheduleFree
+            logger.info(f"use AdamWScheduleFree optimizer | {optimizer_kwargs}")
+        elif optimizer_type == "SGDScheduleFree".lower():
+            optimizer_class = sf.SGDScheduleFree
+            logger.info(f"use SGDScheduleFree optimizer | {optimizer_kwargs}")
+        else:
+            raise ValueError(f"Unknown optimizer type: {optimizer_type}")
+        optimizer = optimizer_class(trainable_params, lr=lr, **optimizer_kwargs)
+
     if optimizer is None:
         # 任意のoptimizerを使う
         optimizer_type = args.optimizer_type  # lowerでないやつ（微妙）
@@ -4116,6 +4131,14 @@ def get_scheduler_fix(args, optimizer: Optimizer, num_processes: int):
     """
     Unified API to get any scheduler from its name.
     """
+    # supports schedule free optimizer
+    if args.optimizer_type.lower().endswith("schedulefree"):
+        # return dummy scheduler: it has 'step' method but does nothing
+        logger.info("use dummy scheduler for schedule free optimizer / schedule free optimizer用のダミースケジューラを使用します")
+        lr_scheduler = TYPE_TO_SCHEDULER_FUNCTION[SchedulerType.CONSTANT](optimizer)
+        lr_scheduler.step = lambda: None
+        return lr_scheduler
+
     name = args.lr_scheduler
     num_warmup_steps: Optional[int] = args.lr_warmup_steps
     num_training_steps = args.max_train_steps * num_processes  # * args.gradient_accumulation_steps
@@ -4250,7 +4273,7 @@ def load_tokenizer(args: argparse.Namespace):
     return tokenizer
 
 
-def prepare_accelerator(args: argparse.Namespace):
+def prepare_accelerator(args: argparse.Namespace) -> Accelerator:
     """
     this function also prepares deepspeed plugin
     """
@@ -4955,12 +4978,14 @@ def conditional_loss(
     return loss
 
 
-def append_lr_to_logs(logs, lr_scheduler, optimizer_type, including_unet=True):
+def append_lr_to_logs(logs, lr_scheduler, optimizer_type, including_unet=True, including_adaptive=False):
     names = []
     if including_unet:
         names.append("unet")
     names.append("text_encoder1")
     names.append("text_encoder2")
+    if including_adaptive:
+        names.append("adaptive_loss_model")
 
     append_lr_to_logs_with_names(logs, lr_scheduler, optimizer_type, names)
 
@@ -4988,6 +5013,7 @@ SCHEDLER_SCHEDULE = "scaled_linear"
 def get_my_scheduler(
     *,
     sample_sampler: str,
+    zero_terminal_snr: bool,
     v_parameterization: bool,
 ):
     sched_init_args = {}
@@ -5016,6 +5042,10 @@ def get_my_scheduler(
         scheduler_cls = KDPM2AncestralDiscreteScheduler
     else:
         scheduler_cls = DDIMScheduler
+
+    if zero_terminal_snr:
+        sched_init_args["rescale_betas_zero_snr"] = True
+        sched_init_args["timestep_spacing"] = "trailing"
 
     if v_parameterization:
         sched_init_args["prediction_type"] = "v_prediction"
@@ -5161,6 +5191,7 @@ def sample_images_common(
     # schedulers: dict = {}  cannot find where this is used
     default_scheduler = get_my_scheduler(
         sample_sampler=args.sample_sampler,
+        zero_terminal_snr=args.zero_terminal_snr,
         v_parameterization=args.v_parameterization,
     )
 
@@ -5271,6 +5302,7 @@ def sample_image_inference(
 
     scheduler = get_my_scheduler(
         sample_sampler=sampler_name,
+        zero_terminal_snr=args.zero_terminal_snr,
         v_parameterization=args.v_parameterization,
     )
     pipeline.scheduler = scheduler
